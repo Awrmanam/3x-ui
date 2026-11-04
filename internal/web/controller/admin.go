@@ -134,18 +134,24 @@ func (a *AdminController) myInbounds(c *gin.Context) {
  rows,err:=a.staff.ListAssignments(a.actor(c),a.actor(c))
  if err!=nil{adminError(c,http.StatusForbidden,err);return}
  ids:=make([]int,0,len(rows))
- for _,r:=range rows{ids=append(ids,r.InboundID)}
+ permissions:=map[int]bool{}
+ for _,r:=range rows{ids=append(ids,r.InboundID);permissions[r.InboundID]=r.CanCreate}
  if len(ids)==0{adminOK(c,[]any{});return}
  type safeInbound struct{
   ID int `json:"id"`
   Remark string `json:"remark"`
   Protocol string `json:"protocol"`
   Port int `json:"port"`
+  CanCreate bool `json:"canCreate"`
  }
  var inbounds []safeInbound
- if err:=database.GetDB().Model(&model.Inbound{}).Select("id, remark, protocol, port").Where("id IN ?",ids).Find(&inbounds).Error;err!=nil {
+ ownerID,err:=a.staff.OwnerID()
+ if err!=nil{adminError(c,http.StatusForbidden,err);return}
+ if err:=database.GetDB().Model(&model.Inbound{}).Select("id, remark, protocol, port").
+  Where("id IN ? AND user_id = ?",ids,ownerID).Find(&inbounds).Error;err!=nil {
   adminError(c,http.StatusInternalServerError,err);return
  }
+ for i:=range inbounds{inbounds[i].CanCreate=permissions[inbounds[i].ID]}
  adminOK(c,inbounds)
 }
 func (a *AdminController) profile(c *gin.Context) {
