@@ -164,3 +164,15 @@ func (s StaffClientService) Delete(userID int,email string)(bool,error){
   Delete(&model.StaffClientOwnership{}).Error;e!=nil{return restart,fmt.Errorf("client deleted but ownership cleanup failed: %w",e)}
  return restart,nil
 }
+
+// Links is restricted to an authenticated member's own persisted client.
+// Calling GetAllClientLinks without ownership verification would expose
+// credentials for any guessed email, so never use the unscoped API in staff UI.
+func (s StaffClientService) Links(userID int,email,host string) ([]string,error) {
+ if err:=s.can(userID,authz.SubsRead);err!=nil{return nil,err}
+ if err:=s.ensureOwned(userID,email);err!=nil{return nil,err}
+ // Do not publish links if the client was attached to a removed/reassigned
+ // inbound; administrators must repair its assignments first.
+ if err:=s.ensureClientInboundsAssigned(userID,email);err!=nil{return nil,err}
+ return s.Inbound.GetAllClientLinks(host,normalizeStaffEmail(email))
+}
