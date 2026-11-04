@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Alert, Button, Card, Col, ConfigProvider, Form, Input, Layout, Modal, Row,
+  Alert, Button, Card, Col, ConfigProvider, Form, Input, InputNumber, Layout, Modal, Popconfirm, Row,
   Select, Space, Spin, Switch, Table, Tag, Typography, message,
 } from 'antd';
 import { useTheme } from '@/hooks/useTheme';
@@ -319,6 +319,7 @@ export default function AdminsPage() {
                     </Card>
                   )}
                   {!isOwner && <AssignedInboundViewer />}
+                  {!isOwner && <StaffClientsPanel />}
                 </>
               )}
             </Space>
@@ -370,3 +371,133 @@ function AssignedInboundViewer() {
   );
 }
 
+
+type OwnClient = {
+  id: number;
+  email: string;
+  subId: string;
+  totalGB: number;
+  expiryTime: number;
+  enable: boolean;
+};
+type StaffInbound = InboundOption & { canCreate: boolean };
+
+function StaffClientsPanel() {
+  const [members, setMembers] = useState<OwnClient[]>([]);
+  const [inbounds, setInbounds] = useState<StaffInbound[]>([]);
+  const [selected, setSelected] = useState<number[]>([]);
+  const [email, setEmail] = useState('');
+  const [quotaGB, setQuotaGB] = useState<number>(50);
+  const [durationDays, setDurationDays] = useState<number>(30);
+  const [busy, setBusy] = useState(false);
+  const [messageApi, holder] = message.useMessage();
+
+  const refresh = useCallback(async () => {
+    const response = await HttpUtil.get<OwnClient[]>(`${base}/me/clients`, undefined, { silent: true });
+    if (response.success) setMembers(response.obj ?? []);
+    else messageApi.error(response.msg || 'Unable to load own clients');
+  }, [messageApi]);
+
+  useEffect(() => {
+    void refresh();
+    void HttpUtil.get<StaffInbound[]>(`${base}/me/inbounds`, undefined, { silent: true })
+      .then((r) => { if (r.success) setInbounds(r.obj ?? []); });
+  }, [refresh]);
+
+  async function createClient() {
+    if (!email.trim() || selected.length === 0 || quotaGB <= 0 || durationDays < 0) {
+      messageApi.error('Specify a client, quota, duration and at least one writable inbound');
+      return;
+    }
+    setBusy(true);
+    try {
+      const expiryTime = durationDays > 0 ? Date.now() + durationDays * 86_400_000 : 0;
+      const response = await HttpUtil.post(`${base}/me/clients/create`, {
+        client: {
+          email: email.trim(),
+          totalGB: Math.round(quotaGB * 1_073_741_824),
+          expiryTime,
+          enable: true,
+        },
+        inboundIds: selected,
+      }, { silent: true });
+      if (!response.success) messageApi.error(response.msg || 'Unable to create client');
+      else {
+        messageApi.success('Client provisioned');
+        setEmail('');
+        await refresh();
+      }
+    } finally { setBusy(false); }
+  }
+
+  async function deleteClient(clientEmail: string) {
+    setBusy(true);
+    try {
+      const response = await HttpUtil.post(
+        `${base}/me/clients/delete/${encodeURIComponent(clientEmail)}`,
+        undefined, { silent: true },
+      );
+      if (!response.success) messageApi.error(response.msg || 'Client delete failed');
+      else { messageApi.success('Client deleted'); await refresh(); }
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <Space orientation="vertical" size="large" style={{ width: '100%' }}>
+      {holder}
+      <Card title="Create a client on assigned inbounds">
+        <Row gutter={[12, 12]}>
+          <Col xs={24} md={10}>
+            <Typography.Text>Client email / identifier</Typography.Text>
+            <Input value={email} onChange={(e) => setEmail(e.target.value)}
+              placeholder="customer001" maxLength={128} />
+          </Col>
+          <Col xs={12} md={7}>
+            <Typography.Text>Traffic quota (GiB)</Typography.Text>
+            <InputNumber min={1} max={100000} value={quotaGB}
+              onChange={(value) => setQuotaGB(value ?? 50)} style={{ width: '100%' }} />
+          </Col>
+          <Col xs={12} md={7}>
+            <Typography.Text>Validity (days, 0 = unlimited)</Typography.Text>
+            <InputNumber min={0} max={3650} value={durationDays}
+              onChange={(value) => setDurationDays(value ?? 30)} style={{ width: '100%' }} />
+          </Col>
+          <Col span={24}>
+            <Typography.Text>Writable inbounds</Typography.Text>
+            <Select mode="multiple" style={{ width: '100%' }} value={selected}
+              onChange={setSelected}
+              options={inbounds.filter((ib) => ib.canCreate).map((ib) => ({
+                value: ib.id, label: `#${ib.id} - ${ib.remark} (${ib.protocol})`,
+              }))}
+              placeholder="Only inbounds assigned for client creation appear here" />
+          </Col>
+          <Col span={24}>
+            <Button type="primary" loading={busy} onClick={() => void createClient()}>
+              Create client
+            </Button>
+          </Col>
+        </Row>
+      </Card>
+      <Card title="My clients">
+        <Table<OwnClient> size="small" rowKey="id" dataSource={members}
+          pagination={{ pageSize: 20 }}
+          scroll={{ x: 650 }}
+          columns={[
+            { title: 'Client', dataIndex: 'email' },
+            { title: 'Quota (GiB)', dataIndex: 'totalGB',
+              render: (v: number) => (v / 1_073_741_824).toFixed(1) },
+            { title: 'Expiry', dataIndex: 'expiryTime',
+              render: (v: number) => v > 0 ? new Date(v).toLocaleDateString() : 'Unlimited' },
+            { title: 'Status', dataIndex: 'enable',
+              render: (v: boolean) => <Tag color={v ? 'green' : 'default'}>{v ? 'Enabled' : 'Disabled'}</Tag> },
+            { title: 'Action', render: (_, record) => (
+              <Popconfirm title="Delete this client?" description="This removes its VPN credentials from all inbounds."
+                onConfirm={() => void deleteClient(record.email)}>
+                <Button danger size="small" loading={busy}>Delete</Button>
+              </Popconfirm>
+            ) },
+          ]} />
+      </Card>
+    </Space>
+  );
+}
