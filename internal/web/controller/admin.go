@@ -4,6 +4,7 @@ import (
  "net/http"
  "strconv"
 
+ "github.com/mhsanaei/3x-ui/v3/internal/authz"
  "github.com/mhsanaei/3x-ui/v3/internal/database"
  "github.com/mhsanaei/3x-ui/v3/internal/database/model"
  "github.com/mhsanaei/3x-ui/v3/internal/web/service"
@@ -128,7 +129,11 @@ func (a *AdminController) saveAssignments(c *gin.Context) {
 func (a *AdminController) myInbounds(c *gin.Context) {
  p,err:=a.staff.ResolvePrincipal(a.actor(c))
  if err!=nil{adminError(c,http.StatusForbidden,err);return}
- if p.Role=="owner" {
+ if p.ScopeFor(authz.InboundsRead)==authz.ScopeNone {
+  c.AbortWithStatus(http.StatusForbidden)
+  return
+ }
+ if p.Role==authz.RoleOwner {
   // Root should use the full existing inbound API.
   adminOK(c,[]any{})
   return
