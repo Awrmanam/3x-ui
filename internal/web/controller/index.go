@@ -79,7 +79,11 @@ func (a *IndexController) sponsorLogo(c *gin.Context) {
 func (a *IndexController) index(c *gin.Context) {
 	if session.IsLogin(c) {
 		c.Header("Cache-Control", "no-store")
-		c.Redirect(http.StatusTemporaryRedirect, c.GetString("base_path")+"panel/")
+		if user := session.GetLoginUser(c); user != nil && !(panel.StaffService{}).IsOwner(user.Id) {
+			c.Redirect(http.StatusTemporaryRedirect, c.GetString("base_path")+"panel/admins")
+		} else {
+			c.Redirect(http.StatusTemporaryRedirect, c.GetString("base_path")+"panel/")
+		}
 		return
 	}
 	serveDistPage(c, "login.html")

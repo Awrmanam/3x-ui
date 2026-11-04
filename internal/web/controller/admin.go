@@ -19,17 +19,17 @@ func NewAdminController(g *gin.RouterGroup) *AdminController {
  a:=&AdminController{}
  g.GET("/me",a.me)
  g.GET("/me/profile",a.myProfile)
- g.PUT("/me/profile",a.saveMyProfile)
+ g.POST("/me/profile",a.saveMyProfile)
  g.GET("/me/inbounds",a.myInbounds)
  g.GET("/list",a.list)
  g.POST("/create",a.create)
  g.POST("/:id/update",a.update)
  g.GET("/:id/permissions",a.permissions)
- g.PUT("/:id/permissions",a.savePermissions)
+ g.POST("/:id/permissions",a.savePermissions)
  g.GET("/:id/inbounds",a.assignments)
- g.PUT("/:id/inbounds",a.saveAssignments)
+ g.POST("/:id/inbounds",a.saveAssignments)
  g.GET("/:id/profile",a.profile)
- g.PUT("/:id/profile",a.saveProfile)
+ g.POST("/:id/profile",a.saveProfile)
  return a
 }
 func (a *AdminController) actor(c *gin.Context) int {
