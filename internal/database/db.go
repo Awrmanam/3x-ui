@@ -69,6 +69,7 @@ func allModels() []any {
 		&model.StaffPermission{},
 		&model.StaffInboundAssignment{},
 		&model.StaffSubscriptionProfile{},
+		&model.StaffClientOwnership{},
 		&model.Inbound{},
 		&model.OutboundTraffics{},
 		&model.Setting{},

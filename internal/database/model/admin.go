@@ -50,3 +50,14 @@ type StaffSubscriptionProfile struct {
  SubscriptionBaseURL string `json:"subscriptionBaseUrl"`
 }
 func (StaffSubscriptionProfile) TableName() string { return "staff_subscription_profiles" }
+
+// StaffClientOwnership is an immutable ownership marker for clients created
+// through the isolated staff API. Legacy clients have NO marker and remain
+// accessible only to the bootstrap owner.
+type StaffClientOwnership struct {
+ Email string `json:"email" gorm:"primaryKey;not null"`
+ UserID int `json:"userId" gorm:"index;not null"`
+ State string `json:"state" gorm:"not null"`
+ CreatedAt int64 `json:"createdAt" gorm:"autoCreateTime:milli"`
+}
+func (StaffClientOwnership) TableName() string { return "staff_client_ownership" }
