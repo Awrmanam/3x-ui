@@ -6,6 +6,7 @@ import (
 
  "github.com/mhsanaei/3x-ui/v3/internal/database"
  "github.com/mhsanaei/3x-ui/v3/internal/database/model"
+ "github.com/mhsanaei/3x-ui/v3/internal/web/service"
  "github.com/mhsanaei/3x-ui/v3/internal/web/service/panel"
  "github.com/mhsanaei/3x-ui/v3/internal/web/session"
  "github.com/gin-gonic/gin"
@@ -21,6 +22,11 @@ func NewAdminController(g *gin.RouterGroup) *AdminController {
  g.GET("/me/profile",a.myProfile)
  g.POST("/me/profile",a.saveMyProfile)
  g.GET("/me/inbounds",a.myInbounds)
+ g.GET("/me/clients",a.listMyClients)
+ g.GET("/me/clients/:email",a.getMyClient)
+ g.POST("/me/clients/create",a.createMyClient)
+ g.POST("/me/clients/update/:email",a.updateMyClient)
+ g.POST("/me/clients/delete/:email",a.deleteMyClient)
  g.GET("/list",a.list)
  g.POST("/create",a.create)
  g.POST("/:id/update",a.update)
@@ -167,4 +173,55 @@ func (a *AdminController) saveProfileFor(c *gin.Context,id int) {
  if err:=c.ShouldBindJSON(&input);err!=nil{adminError(c,http.StatusBadRequest,err);return}
  if err:=a.staff.SetProfile(a.actor(c),id,input);err!=nil{adminError(c,http.StatusBadRequest,err);return}
  adminOK(c,true)
+}
+
+func staffClientService() panel.StaffClientService {
+ return panel.StaffClientService{}
+}
+func (a *AdminController) listMyClients(c *gin.Context) {
+ rows,err:=staffClientService().List(a.actor(c))
+ if err!=nil{adminError(c,http.StatusForbidden,err);return}
+ adminOK(c,rows)
+}
+func (a *AdminController) getMyClient(c *gin.Context) {
+ row,err:=staffClientService().Get(a.actor(c),c.Param("email"))
+ if err!=nil{adminError(c,http.StatusNotFound,err);return}
+ adminOK(c,row)
+}
+func (a *AdminController) createMyClient(c *gin.Context) {
+ var payload service.ClientCreatePayload
+ if err:=c.ShouldBindJSON(&payload);err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ svc:=staffClientService()
+ restart,err:=svc.Create(a.actor(c),&payload)
+ if restart {a.xrayRestart()}
+ if restart || err==nil {notifyClientsChanged()}
+ if err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ adminOK(c,gin.H{"email":payload.Client.Email,"inboundIds":payload.InboundIds})
+}
+func (a *AdminController) updateMyClient(c *gin.Context) {
+ var req struct {
+  model.Client
+  LimitHwid int `json:"limitHwid"`
+ }
+ if err:=c.ShouldBindJSON(&req);err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ svc:=staffClientService()
+ restart,err:=svc.Update(a.actor(c),c.Param("email"),req.Client,req.LimitHwid,nil)
+ if restart {a.xrayRestart()}
+ if restart || err==nil {notifyClientsChanged()}
+ if err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ adminOK(c,true)
+}
+func (a *AdminController) deleteMyClient(c *gin.Context) {
+ svc:=staffClientService()
+ restart,err:=svc.Delete(a.actor(c),c.Param("email"))
+ if restart {a.xrayRestart()}
+ if restart || err==nil {notifyClientsChanged()}
+ if err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ adminOK(c,true)
+}
+// Existing node/core restart flags remain controlled by the shared service
+// rather than restarting Xray inside HTTP handlers.
+func (a *AdminController) xrayRestart() {
+ var x service.XrayService
+ x.SetToNeedRestart()
 }
