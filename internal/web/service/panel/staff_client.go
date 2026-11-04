@@ -176,3 +176,13 @@ func (s StaffClientService) Links(userID int,email,host string) ([]string,error)
  if err:=s.ensureClientInboundsAssigned(userID,email);err!=nil{return nil,err}
  return s.Inbound.GetAllClientLinks(host,normalizeStaffEmail(email))
 }
+
+func (s StaffClientService) SubscriptionLinks(userID int,email,host string) ([]string,error) {
+ if err:=s.can(userID,authz.SubsRead);err!=nil{return nil,err}
+ if err:=s.ensureOwned(userID,email);err!=nil{return nil,err}
+ if err:=s.ensureClientInboundsAssigned(userID,email);err!=nil{return nil,err}
+ var row model.ClientRecord
+ err:=database.GetDB().Where("email = ?",normalizeStaffEmail(email)).First(&row).Error
+ if err!=nil || row.SubID=="" {return nil,ErrStaffClientNotFound}
+ return s.Inbound.GetSubLinks(host,row.SubID)
+}

@@ -211,6 +211,7 @@ func (a *APIController) enforceStaffScope(c *gin.Context) {
 	case rel == "/admins/me/clients" && c.Request.Method == http.MethodGet:
 	case rel == "/admins/me/clients/:email" && c.Request.Method == http.MethodGet:
 	case rel == "/admins/me/clients/:email/links" && c.Request.Method == http.MethodGet:
+	case rel == "/admins/me/clients/:email/sub-links" && c.Request.Method == http.MethodGet:
 	case rel == "/admins/me/clients/create" && c.Request.Method == http.MethodPost:
 	case rel == "/admins/me/clients/update/:email" && c.Request.Method == http.MethodPost:
 	case rel == "/admins/me/clients/delete/:email" && c.Request.Method == http.MethodPost:

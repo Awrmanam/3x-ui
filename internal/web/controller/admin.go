@@ -25,6 +25,7 @@ func NewAdminController(g *gin.RouterGroup) *AdminController {
  g.GET("/me/clients",a.listMyClients)
  g.GET("/me/clients/:email",a.getMyClient)
  g.GET("/me/clients/:email/links",a.getMyClientLinks)
+ g.GET("/me/clients/:email/sub-links",a.getMyClientSubscriptionLinks)
  g.POST("/me/clients/create",a.createMyClient)
  g.POST("/me/clients/update/:email",a.updateMyClient)
  g.POST("/me/clients/delete/:email",a.deleteMyClient)
@@ -235,6 +236,12 @@ func (a *AdminController) xrayRestart() {
 
 func (a *AdminController) getMyClientLinks(c *gin.Context) {
  links,err:=staffClientService().Links(a.actor(c),c.Param("email"),resolveHost(c))
+ if err!=nil{adminError(c,http.StatusForbidden,err);return}
+ adminOK(c,links)
+}
+
+func (a *AdminController) getMyClientSubscriptionLinks(c *gin.Context) {
+ links,err:=staffClientService().SubscriptionLinks(a.actor(c),c.Param("email"),resolveHost(c))
  if err!=nil{adminError(c,http.StatusForbidden,err);return}
  adminOK(c,links)
 }
