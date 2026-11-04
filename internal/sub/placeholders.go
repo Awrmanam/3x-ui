@@ -7,6 +7,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/mhsanaei/3x-ui/v3/internal/authz"
 	"github.com/mhsanaei/3x-ui/v3/internal/database"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 	"github.com/mhsanaei/3x-ui/v3/internal/logger"
@@ -152,4 +153,13 @@ func (s *SubService) subscriptionTemplateContextBySubID(subID string) (remarkCon
 		return remarkContext{}, false, err
 	}
 	return remarkContext{client: *rec.ToClient()}, true, nil
+}
+
+// applyStaffRemarkTemplate uses a per-request SubService clone and an owner
+// resolved from the subscriber ledger. Never mutate the shared controller
+// SubService: otherwise concurrent resellers would bleed their names together.
+func (s *SubService) applyStaffRemarkTemplate(subID string) {
+ profile,ok:=staffSubscriptionMetadata(subID)
+ if !ok || profile.RemarkTemplate=="" {return}
+ s.remarkTemplate=authz.CanonicalRemarkTemplate(profile.RemarkTemplate)
 }

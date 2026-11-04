@@ -26,8 +26,25 @@ type SubscriptionProfile struct {
 // Supported placeholders are intentionally narrow. Raw Go/HTML templates from
 // untrusted admins must never be evaluated against host/application state.
 var allowedRemarkPlaceholders = map[string]struct{}{
- "client":{}, "server":{}, "country":{}, "protocol":{}, "remark":{},
+ "EMAIL":{}, "USERNAME":{}, "INBOUND":{}, "HOST":{}, "ID":{},
+ "SHORT_ID":{}, "TELEGRAM_ID":{}, "SUB_ID":{}, "COMMENT":{},
+ "PROTOCOL":{}, "TRANSPORT":{}, "SECURITY":{}, "TRAFFIC_USED":{},
+ "TRAFFIC_LEFT":{}, "TRAFFIC_TOTAL":{}, "DAYS_LEFT":{},
+ "EXPIRE_DATE":{}, "EXPIRE_UNIX":{}, "CREATED_UNIX":{}, "TIME_LEFT":{},
+ "JALALI_EXPIRE_DATE":{}, "STATUS_EMOJI":{}, "USAGE_PERCENTAGE":{},
+ "client":{}, "server":{}, "protocol":{}, "remark":{},
 }
+var remarkAliases = map[string]string{
+ "{{client}}":"{{EMAIL}}", "{{server}}":"{{INBOUND}}",
+ "{{protocol}}":"{{PROTOCOL}}", "{{remark}}":"{{HOST}}",
+}
+// CanonicalRemarkTemplate converts supported friendly placeholders into the
+// safe existing 3x-ui remark renderer's tokens.
+func CanonicalRemarkTemplate(raw string) string {
+ for from,to:=range remarkAliases {raw=strings.ReplaceAll(raw,from,to)}
+ return raw
+}
+
 var placeholderRE = regexp.MustCompile(`\{\{([a-zA-Z][a-zA-Z0-9_]*)\}\}`)
 var supportIDRE = regexp.MustCompile(`^[a-zA-Z0-9_]{5,32}$`)
 var templateNameRE = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,64}$`)

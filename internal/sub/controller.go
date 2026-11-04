@@ -433,6 +433,7 @@ func (a *SUBController) buildSubPageData(c *gin.Context) (PageData, bool) {
 	subId := c.Param("subid")
 	_, host, _, hostHeader := a.subService.ResolveRequest(c)
 	subReq := a.subService.ForRequest(host)
+	subReq.applyStaffRemarkTemplate(c.Param("subid"))
 	subReq.subscriptionBody = false
 	subs, emails, lastOnline, traffic, err := subReq.getSubs(subId)
 	if err != nil || subs == nil {
@@ -501,6 +502,7 @@ func (a *SUBController) subs(c *gin.Context) {
 	subId := c.Param("subid")
 	scheme, host, hostWithPort, _ := a.subService.ResolveRequest(c)
 	subReq := a.subService.ForRequest(host)
+	subReq.applyStaffRemarkTemplate(c.Param("subid"))
 	subReq.subscriptionBody = true
 	subs, _, _, traffic, err := subReq.getSubs(subId)
 	if err != nil || subs == nil {

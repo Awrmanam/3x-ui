@@ -4,7 +4,7 @@ import "testing"
 
 func TestSubscriptionProfilesRequireOwner(t *testing.T) {
  if ValidateSubscriptionProfile(SubscriptionProfile{})==nil{t.Fatal("ownerless profile admitted")}
- p:=SubscriptionProfile{UserID:10,Title:"Reseller 10",SupportID:"support_test",SupportURL:"https://t.me/support_test",RemarkTemplate:"{{country}} | {{client}}",ShareLinkTemplate:"xray-default",PageTemplate:"minimal"}
+ p:=SubscriptionProfile{UserID:10,Title:"Reseller 10",SupportID:"support_test",SupportURL:"https://t.me/support_test",RemarkTemplate:"{{INBOUND}} | {{client}}",ShareLinkTemplate:"xray-default",PageTemplate:"minimal"}
  if err:=ValidateSubscriptionProfile(p);err!=nil{t.Fatalf("valid profile rejected: %v",err)}
  p.UserID=0
  if ValidateSubscriptionProfile(p)==nil{t.Fatal("missing owner admitted")}
@@ -32,4 +32,13 @@ func TestSubscriptionProfileEditingIsTenantScoped(t *testing.T) {
  if reseller.CanEditSubscriptionProfile(11){t.Fatal("owner-revoked edit permission ignored")}
  owner:=Principal{UserID:1,Role:RoleOwner,Enabled:true}
  if !owner.CanEditSubscriptionProfile(22){t.Fatal("owner cannot manage profile")}
+}
+
+func TestCanonicalRemarkTemplate(t *testing.T) {
+ p:=SubscriptionProfile{UserID:22,RemarkTemplate:"{{server}} | {{client}} | {{protocol}}"}
+ if err:=ValidateSubscriptionProfile(p);err!=nil{t.Fatal(err)}
+ got:=CanonicalRemarkTemplate(p.RemarkTemplate)
+ if got!="{{INBOUND}} | {{EMAIL}} | {{PROTOCOL}}" {t.Fatalf("canonical template %q",got)}
+ p.RemarkTemplate="{{country}}"
+ if err:=ValidateSubscriptionProfile(p);err==nil{t.Fatal("unsupported country placeholder must be rejected")}
 }
