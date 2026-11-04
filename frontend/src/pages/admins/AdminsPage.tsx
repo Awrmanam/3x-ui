@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Alert, Button, Card, Col, ConfigProvider, Form, Input, Layout, Row,
+  Alert, Button, Card, Col, ConfigProvider, Form, Input, Layout, Modal, Row,
   Select, Space, Spin, Switch, Table, Tag, Typography, message,
 } from 'antd';
 import { useTheme } from '@/hooks/useTheme';
@@ -325,14 +325,28 @@ export default function AdminsPage() {
           </Layout.Content>
         </Layout>
       </Layout>
-      <div style={{ display: createVisible ? 'block' : 'none' }}>
+      <Modal open={createVisible} title="Create administrator" footer={null} destroyOnHidden
+        onCancel={() => setCreateVisible(false)}>
         <Form form={createForm} layout="vertical" onFinish={(values) => void createUser(values)}
           initialValues={{ role: 'reseller', enabled: false }}>
-          <div aria-hidden style={{ display: 'none' }} />
+          <Form.Item name="username" label="Username" rules={[{ required: true }, { min: 3 }]}>
+            <Input autoComplete="off" />
+          </Form.Item>
+          <Form.Item name="password" label="Password" rules={[{ required: true }, { min: 12 }]}>
+            <Input.Password autoComplete="new-password" />
+          </Form.Item>
+          <Form.Item name="role" label="Role" rules={[{ required: true }]}>
+            <Select options={roles.map((r) => ({ value: r, label: r.toUpperCase() }))} />
+          </Form.Item>
+          <Form.Item name="enabled" label="Enable account" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+          <Space>
+            <Button type="primary" htmlType="submit" loading={saving}>Create</Button>
+            <Button onClick={() => setCreateVisible(false)}>Cancel</Button>
+          </Space>
         </Form>
-      </div>
-      <CreateModal visible={createVisible} onClose={() => setCreateVisible(false)} form={createForm}
-        saving={saving} onSubmit={createUser} />
+      </Modal>
     </ConfigProvider>
   );
 }
@@ -356,35 +370,3 @@ function AssignedInboundViewer() {
   );
 }
 
-function CreateModal({ visible, onClose, form, saving, onSubmit }: {
-  visible: boolean;
-  onClose: () => void;
-  form: ReturnType<typeof Form.useForm<CreateInput>>[0];
-  saving: boolean;
-  onSubmit: (values: CreateInput) => Promise<void>;
-}) {
-  if (!visible) return null;
-  return (
-    <Card title="Create administrator" style={{ margin: 20 }}>
-      <Form form={form} layout="vertical" onFinish={(values) => void onSubmit(values)}
-        initialValues={{ role: 'reseller', enabled: false }}>
-        <Form.Item name="username" label="Username" rules={[{ required: true }, { min: 3 }]}>
-          <Input autoComplete="off" />
-        </Form.Item>
-        <Form.Item name="password" label="Password" rules={[{ required: true }, { min: 12 }]}>
-          <Input.Password autoComplete="new-password" />
-        </Form.Item>
-        <Form.Item name="role" label="Role" rules={[{ required: true }]}>
-          <Select options={roles.map((r) => ({ value: r, label: r.toUpperCase() }))} />
-        </Form.Item>
-        <Form.Item name="enabled" label="Enable account" valuePropName="checked">
-          <Switch />
-        </Form.Item>
-        <Space>
-          <Button type="primary" htmlType="submit" loading={saving}>Create</Button>
-          <Button onClick={onClose}>Cancel</Button>
-        </Space>
-      </Form>
-    </Card>
-  );
-}
