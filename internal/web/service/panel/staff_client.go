@@ -64,7 +64,7 @@ func (s StaffClientService) ensureClientInboundsAssigned(userID int,email string
  var ids []int
  err:=database.GetDB().Table("client_inbounds AS ci").
   Joins("JOIN clients AS c ON c.id = ci.client_id").
-  Where("LOWER(c.email) = ?",normalizeStaffEmail(email)).
+  Where("c.email = ?",normalizeStaffEmail(email)).
   Pluck("ci.inbound_id",&ids).Error
  if err!=nil{return err}
  if len(ids)==0{return ErrStaffClientNotFound}
@@ -77,7 +77,7 @@ func (s StaffClientService) List(userID int) ([]model.ClientRecord,error) {
  if err:=s.can(userID,authz.ClientsRead);err!=nil{return nil,err}
  var out []model.ClientRecord
  err:=database.GetDB().Model(&model.ClientRecord{}).
-  Joins("JOIN staff_client_ownership AS owner ON LOWER(owner.email) = LOWER(clients.email)").
+  Joins("JOIN staff_client_ownership AS owner ON owner.email = clients.email").
   Where("owner.user_id = ? AND owner.state = ?",userID,"active").
   Order("clients.id desc").Limit(1000).Find(&out).Error
  return out,err
@@ -86,7 +86,7 @@ func (s StaffClientService) Get(userID int,email string)(*model.ClientRecord,err
  if err:=s.can(userID,authz.ClientsRead);err!=nil{return nil,err}
  if err:=s.ensureOwned(userID,email);err!=nil{return nil,err}
  var c model.ClientRecord
- err:=database.GetDB().Where("LOWER(email) = ?",normalizeStaffEmail(email)).First(&c).Error
+ err:=database.GetDB().Where("email = ?",normalizeStaffEmail(email)).First(&c).Error
  if err!=nil{return nil,ErrStaffClientNotFound}
  return &c,nil
 }
@@ -123,16 +123,24 @@ func (s StaffClientService) Create(userID int,payload *service.ClientCreatePaylo
  var exists int64
  lookupErr:=database.GetDB().Model(&model.ClientRecord{}).Where("email = ?",email).Count(&exists).Error
  if lookupErr!=nil{return restart,errors.Join(creationErr,lookupErr)}
- if exists>0{
-  if err:=database.GetDB().Model(&model.StaffClientOwnership{}).
-   Where("email = ? AND user_id = ?",email,userID).Update("state","active").Error;err!=nil{
-   return restart,errors.Join(creationErr,err)
+ if creationErr!=nil{
+  // On any partial/ambiguous error, quarantine the reservation. In
+  // particular, a concurrent owner-created client must NEVER become a
+  // reseller client merely because an email now exists in the database.
+  if exists>0{
+   _=database.GetDB().Model(&model.StaffClientOwnership{}).
+    Where("email = ? AND user_id = ?",email,userID).Update("state","needs_review").Error
+  }else{
+   _=database.GetDB().Where("email = ? AND user_id = ? AND state = ?",email,userID,"reserved").Delete(&model.StaffClientOwnership{}).Error
   }
- }else{
-  // No client ever persisted; release the email reservation.
-  _=database.GetDB().Where("email = ? AND user_id = ? AND state = ?",email,userID,"reserved").Delete(&model.StaffClientOwnership{}).Error
+  return restart,creationErr
  }
- return restart,creationErr
+ if exists==0{return restart,errors.New("client create returned without persisting a record")}
+ if err:=database.GetDB().Model(&model.StaffClientOwnership{}).
+  Where("email = ? AND user_id = ? AND state = ?",email,userID,"reserved").Update("state","active").Error;err!=nil{
+  return restart,err
+ }
+ return restart,nil
 }
 func (s StaffClientService) Update(userID int,email string,client model.Client,limitHwid int,inboundFilter []int)(bool,error) {
  if err:=s.can(userID,authz.ClientsUpdate);err!=nil{return false,err}
@@ -144,13 +152,13 @@ func (s StaffClientService) Update(userID int,email string,client model.Client,l
  if strings.TrimSpace(client.Email)!="" && normalizeStaffEmail(client.Email)!=normalizeStaffEmail(email) {
   return false,errors.New("staff cannot rename clients through this endpoint")
  }
- return s.Client.UpdateByEmail(&s.Inbound,email,client,limitHwid,inboundFilter...)
+ return s.Client.UpdateByEmail(&s.Inbound,normalizeStaffEmail(email),client,limitHwid,inboundFilter...)
 }
 func (s StaffClientService) Delete(userID int,email string)(bool,error){
  if err:=s.can(userID,authz.ClientsDelete);err!=nil{return false,err}
  if err:=s.ensureOwned(userID,email);err!=nil{return false,err}
  if err:=s.ensureClientInboundsAssigned(userID,email);err!=nil{return false,err}
- restart,err:=s.Client.DeleteByEmail(&s.Inbound,email,false)
+ restart,err:=s.Client.DeleteByEmail(&s.Inbound,normalizeStaffEmail(email),false)
  if err!=nil{return restart,err}
  if e:=database.GetDB().Where("email = ? AND user_id = ?",normalizeStaffEmail(email),userID).
   Delete(&model.StaffClientOwnership{}).Error;e!=nil{return restart,fmt.Errorf("client deleted but ownership cleanup failed: %w",e)}

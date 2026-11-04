@@ -133,7 +133,7 @@ func staffSubscriptionMetadata(subID string) (model.StaffSubscriptionProfile, bo
 	var profile model.StaffSubscriptionProfile
 	err := db.Model(&model.StaffSubscriptionProfile{}).
 		Joins("JOIN staff_client_ownership AS owner ON owner.user_id = staff_subscription_profiles.user_id").
-		Joins("JOIN clients ON LOWER(clients.email) = owner.email").
+		Joins("JOIN clients ON clients.email = owner.email").
 		Where("clients.sub_id = ? AND owner.state = ?", subID, "active").
 		First(&profile).Error
 	return profile, err == nil
