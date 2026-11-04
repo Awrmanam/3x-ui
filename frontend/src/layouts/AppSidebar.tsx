@@ -156,6 +156,16 @@ export default function AppSidebar() {
   const showSubFormats = !!(allSetting.subJsonEnable || allSetting.subClashEnable);
   const showSubBalancers = !!allSetting.subJsonEnable;
 
+  // Subordinate accounts only receive the audited staff management view.
+  // Server middleware independently blocks all unsafe legacy API routes.
+  const [isStaff, setIsStaff] = useState(false);
+  useEffect(() => {
+    void HttpUtil.get<{role?: string}>('/panel/api/admins/me', undefined, { silent: true })
+      .then((response) => {
+        if (response.success && response.obj) setIsStaff(response.obj.role !== 'owner');
+      });
+  }, []);
+
   const [hovered, setHovered] = useState(() => hoveredAcrossRemounts);
   const [pinned, setPinned] = useState(readSidebarPinned);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -190,14 +200,14 @@ export default function AppSidebar() {
 
   const tabs = useMemo<{ key: string; icon: ComponentType; title: string }[]>(
     () => [
-      ...PANEL_ROUTES.map((route) => ({
+      ...PANEL_ROUTES.filter((route) => !isStaff || route.path === '/admins').map((route) => ({
         key: route.path,
         icon: route.icon,
         title: t(route.titleKey),
       })),
       { key: LOGOUT_KEY, icon: LogoutOutlined, title: t('logout') },
     ],
-    [t],
+    [t, isStaff],
   );
 
   const navItems = useMemo(() => tabs.filter((tab) => tab.key !== LOGOUT_KEY), [tabs]);
