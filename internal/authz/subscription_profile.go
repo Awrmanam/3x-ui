@@ -71,8 +71,9 @@ func validateRemarkTemplate(value string) error {
 func ValidateSubscriptionProfile(p SubscriptionProfile) error {
  if p.UserID<=0{return errors.New("subscription profile must have an owner")}
  if err:=validatePlainText(p.Title,"title",120);err!=nil{return err}
- if err:=validatePlainText(p.SupportID,"support ID",32);err!=nil{return err}
- if p.SupportID!="" && !supportIDRE.MatchString(strings.TrimPrefix(p.SupportID,"@")) {
+ normalizedSupportID:=strings.TrimPrefix(p.SupportID,"@")
+ if err:=validatePlainText(normalizedSupportID,"support ID",32);err!=nil{return err}
+ if p.SupportID!="" && !supportIDRE.MatchString(normalizedSupportID) {
   return errors.New("support ID must be a Telegram username of 5–32 characters")
  }
  if err:=validateHTTPSURL(p.SupportURL,"support URL");err!=nil{return err}
