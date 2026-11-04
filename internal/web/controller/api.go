@@ -180,6 +180,41 @@ func (a *APIController) enforceTokenScope(c *gin.Context) {
 	deny()
 }
 
+// enforceStaffScope is an explicit fail-closed boundary around legacy 3x-ui
+// APIs. They contain unscoped database lookups and cannot be exposed to staff.
+// All staff endpoints are separate, audited handlers under /admins/me.
+func (a *APIController) enforceStaffScope(c *gin.Context) {
+	user := session.GetLoginUser(c)
+	if user == nil {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	staffSvc := panel.StaffService{}
+	ownerID, err := staffSvc.OwnerID()
+	if err != nil {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+	if user.Id == ownerID {
+		c.Next()
+		return
+	}
+	if _, err := staffSvc.StaffForLogin(user.Id); err != nil {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+	rel := relAPIPath(c.FullPath())
+	switch {
+	case rel == "/admins/me" && c.Request.Method == http.MethodGet:
+	case rel == "/admins/me/profile" && (c.Request.Method == http.MethodGet || c.Request.Method == http.MethodPut):
+	case rel == "/admins/me/inbounds" && c.Request.Method == http.MethodGet:
+	default:
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"success":false,"msg":"staff route not yet authorized"})
+		return
+	}
+	c.Next()
+}
+
 func relAPIPath(fullPath string) string {
 	const marker = "/panel/api"
 	_, after, ok := strings.Cut(fullPath, marker)
@@ -195,12 +230,14 @@ func (a *APIController) initRouter(g *gin.RouterGroup) {
 	api := g.Group("/panel/api")
 	api.Use(a.checkAPIAuth)
 	api.Use(a.enforceTokenScope)
+	api.Use(a.enforceStaffScope)
 	// Decode + verify the node config envelope (zstd + X-Config-Sha256) and
 	// advertise support, before CSRF/handlers read the body.
 	api.Use(middleware.ConfigEnvelopeMiddleware())
 	api.Use(middleware.CSRFMiddleware(getRemoteIp))
 
 	api.GET("/openapi.json", ServeOpenAPISpec)
+	NewAdminController(api.Group("/admins"))
 
 	// Inbounds API
 	inbounds := api.Group("/inbounds")

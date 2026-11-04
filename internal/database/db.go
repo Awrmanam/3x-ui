@@ -64,6 +64,11 @@ const sqliteBackupDirPrefix = ".x-ui-backup-"
 func allModels() []any {
 	return []any{
 		&model.User{},
+		&model.AdminRoot{},
+		&model.StaffAccount{},
+		&model.StaffPermission{},
+		&model.StaffInboundAssignment{},
+		&model.StaffSubscriptionProfile{},
 		&model.Inbound{},
 		&model.OutboundTraffics{},
 		&model.Setting{},

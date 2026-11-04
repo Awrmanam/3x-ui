@@ -80,7 +80,7 @@ func GetLoginUser(c *gin.Context) *model.User {
 		}
 		return nil
 	}
-	if !sessionEpochMatches(s.Get(loginEpochKey), user.LoginEpoch) {
+	if !sessionEpochMatches(s.Get(loginEpochKey), user.LoginEpoch) || !staffSessionAllowed(user.Id) {
 		s.Delete(loginUserKey)
 		s.Delete(loginEpochKey)
 		if saveErr := s.Save(); saveErr != nil {
@@ -160,6 +160,28 @@ func getUserByID(id int) (*model.User, error) {
 		return nil, err
 	}
 	return user, nil
+}
+
+// staffSessionAllowed enforces account disable/revocation on every request.
+// API bearer sessions bypass this check only when authenticated separately by
+// the existing token mechanism, which maps them to the bootstrap owner.
+func staffSessionAllowed(userID int) bool {
+	db := database.GetDB()
+	if db == nil || userID <= 0 {
+		return false
+	}
+	var root model.AdminRoot
+	if err := db.Where("id = ?", 1).First(&root).Error; err != nil {
+		// First-install / legacy DB before its first authenticated login.
+		// Only the original first user may log in during bootstrap.
+		var first model.User
+		return db.Order("id asc").First(&first).Error == nil && first.Id == userID
+	}
+	if root.OwnerUserID == userID {
+		return true
+	}
+	var staff model.StaffAccount
+	return db.Where("user_id = ? AND enabled = ?", userID, true).First(&staff).Error == nil
 }
 
 func ClearSession(c *gin.Context) error {

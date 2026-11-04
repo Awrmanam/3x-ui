@@ -88,6 +88,14 @@ func (w *WebSocketController) HandleWebSocket(c *gin.Context) {
 		return
 	}
 
+	// The hub broadcasts global client/status data without tenant partitioning.
+	// Until the hub can target a tenant, only the immutable owner may connect.
+	user := session.GetLoginUser(c)
+	if user == nil || !(panel.StaffService{}).IsOwner(user.Id) {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		logger.Error("Failed to upgrade WebSocket connection:", err)

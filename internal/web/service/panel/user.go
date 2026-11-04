@@ -66,9 +66,24 @@ func (s *UserService) CheckUser(username string, password string, twoFactorCode 
 		return nil, err
 	}
 
+	// Bootstrap the immutable first-install owner before accepting any staff login.
+	// Unknown database users are never allowed to inherit owner permissions.
+	rootID, rootErr := (StaffService{}).OwnerID()
+	if rootErr != nil {
+		return nil, rootErr
+	}
+	var staff *model.StaffAccount
+	if user.Id != rootID {
+		staff, rootErr = (StaffService{}).StaffForLogin(user.Id)
+		if rootErr != nil || staff == nil {
+			return nil, errors.New("invalid credentials")
+		}
+	}
 	if !crypto.CheckPasswordHash(user.Password, password) {
 		ldapEnabled, _ := s.settingService.GetLdapEnable()
-		if !ldapEnabled {
+		// LDAP is configured globally for the bootstrap owner. Do not allow
+		// a subordinate username to authenticate via the owner's LDAP realm.
+		if !ldapEnabled || staff != nil {
 			return nil, errors.New("invalid credentials")
 		}
 
@@ -99,6 +114,14 @@ func (s *UserService) CheckUser(username string, password string, twoFactorCode 
 		}
 	}
 
+	// Staff TOTP is account-specific. Global TOTP protects only the owner.
+	// A staff account with a configured secret must present its own code.
+	if staff != nil {
+		if staff.TOTPSecret != "" && !totp.VerifyWithSkew(staff.TOTPSecret, twoFactorCode, time.Now()) {
+			return nil, errors.New("invalid 2fa code")
+		}
+		return user, nil
+	}
 	twoFactorEnable, err := s.settingService.GetTwoFactorEnable()
 	if err != nil {
 		logger.Warning("check two factor err:", err)

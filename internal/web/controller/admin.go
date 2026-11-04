@@ -1,0 +1,170 @@
+package controller
+
+import (
+ "net/http"
+ "strconv"
+
+ "github.com/mhsanaei/3x-ui/v3/internal/database"
+ "github.com/mhsanaei/3x-ui/v3/internal/database/model"
+ "github.com/mhsanaei/3x-ui/v3/internal/web/service/panel"
+ "github.com/mhsanaei/3x-ui/v3/internal/web/session"
+ "github.com/gin-gonic/gin"
+)
+
+// AdminController is intentionally isolated from the inherited all-powerful
+// inbound/client APIs. It never trusts owner/user identity from request JSON.
+type AdminController struct{staff panel.StaffService}
+
+func NewAdminController(g *gin.RouterGroup) *AdminController {
+ a:=&AdminController{}
+ g.GET("/me",a.me)
+ g.GET("/me/profile",a.myProfile)
+ g.PUT("/me/profile",a.saveMyProfile)
+ g.GET("/me/inbounds",a.myInbounds)
+ g.GET("/list",a.list)
+ g.POST("/create",a.create)
+ g.POST("/:id/update",a.update)
+ g.GET("/:id/permissions",a.permissions)
+ g.PUT("/:id/permissions",a.savePermissions)
+ g.GET("/:id/inbounds",a.assignments)
+ g.PUT("/:id/inbounds",a.saveAssignments)
+ g.GET("/:id/profile",a.profile)
+ g.PUT("/:id/profile",a.saveProfile)
+ return a
+}
+func (a *AdminController) actor(c *gin.Context) int {
+ u:=session.GetLoginUser(c)
+ if u==nil{return 0}
+ return u.Id
+}
+func (a *AdminController) owner(c *gin.Context) bool {
+ if !a.staff.IsOwner(a.actor(c)) {
+  c.AbortWithStatusJSON(http.StatusForbidden,gin.H{"success":false,"msg":"owner permission required"})
+  return false
+ }
+ return true
+}
+func adminError(c *gin.Context,code int,err error) {
+ c.JSON(code,gin.H{"success":false,"msg":err.Error()})
+}
+func adminOK(c *gin.Context,obj any) {
+ c.JSON(http.StatusOK,gin.H{"success":true,"obj":obj})
+}
+func (a *AdminController) target(c *gin.Context)(int,bool) {
+ id,err:=strconv.Atoi(c.Param("id"))
+ if err!=nil||id<=0 {
+  c.JSON(http.StatusBadRequest,gin.H{"success":false,"msg":"invalid account ID"})
+  return 0,false
+ }
+ return id,true
+}
+func (a *AdminController) me(c *gin.Context) {
+ user:=session.GetLoginUser(c)
+ if user==nil{c.AbortWithStatus(http.StatusUnauthorized);return}
+ p,err:=a.staff.ResolvePrincipal(user.Id)
+ if err!=nil {adminError(c,http.StatusForbidden,err);return}
+ adminOK(c,gin.H{"id":user.Id,"username":user.Username,"role":p.Role,"permissions":p.Overrides})
+}
+func (a *AdminController) list(c *gin.Context) {
+ if !a.owner(c){return}
+ rows,err:=a.staff.List(a.actor(c))
+ if err!=nil{adminError(c,http.StatusInternalServerError,err);return}
+ adminOK(c,rows)
+}
+func (a *AdminController) create(c *gin.Context) {
+ if !a.owner(c){return}
+ var in panel.StaffCreateInput
+ if err:=c.ShouldBindJSON(&in);err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ row,err:=a.staff.Create(a.actor(c),in)
+ if err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ adminOK(c,row)
+}
+func (a *AdminController) update(c *gin.Context) {
+ if !a.owner(c){return}
+ id,ok:=a.target(c);if !ok{return}
+ var in panel.StaffUpdateInput
+ if err:=c.ShouldBindJSON(&in);err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ if err:=a.staff.Update(a.actor(c),id,in);err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ adminOK(c,true)
+}
+func (a *AdminController) permissions(c *gin.Context) {
+ if !a.owner(c){return}
+ id,ok:=a.target(c);if !ok{return}
+ rows,err:=a.staff.ListPermissions(a.actor(c),id)
+ if err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ adminOK(c,rows)
+}
+func (a *AdminController) savePermissions(c *gin.Context) {
+ if !a.owner(c){return}
+ id,ok:=a.target(c);if !ok{return}
+ var in struct{Permissions []model.StaffPermission `json:"permissions"`}
+ if err:=c.ShouldBindJSON(&in);err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ if err:=a.staff.SetPermissions(a.actor(c),id,in.Permissions);err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ adminOK(c,true)
+}
+func (a *AdminController) assignments(c *gin.Context) {
+ if !a.owner(c){return}
+ id,ok:=a.target(c);if !ok{return}
+ rows,err:=a.staff.ListAssignments(a.actor(c),id)
+ if err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ adminOK(c,rows)
+}
+func (a *AdminController) saveAssignments(c *gin.Context) {
+ if !a.owner(c){return}
+ id,ok:=a.target(c);if !ok{return}
+ var in struct{Inbounds []model.StaffInboundAssignment `json:"inbounds"`}
+ if err:=c.ShouldBindJSON(&in);err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ if err:=a.staff.SetAssignments(a.actor(c),id,in.Inbounds);err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ adminOK(c,true)
+}
+func (a *AdminController) myInbounds(c *gin.Context) {
+ p,err:=a.staff.ResolvePrincipal(a.actor(c))
+ if err!=nil{adminError(c,http.StatusForbidden,err);return}
+ if p.Role=="owner" {
+  // Root should use the full existing inbound API.
+  adminOK(c,[]any{})
+  return
+ }
+ rows,err:=a.staff.ListAssignments(a.actor(c),a.actor(c))
+ if err!=nil{adminError(c,http.StatusForbidden,err);return}
+ ids:=make([]int,0,len(rows))
+ for _,r:=range rows{ids=append(ids,r.InboundID)}
+ if len(ids)==0{adminOK(c,[]any{});return}
+ type safeInbound struct{
+  ID int `json:"id"`
+  Remark string `json:"remark"`
+  Protocol string `json:"protocol"`
+  Port int `json:"port"`
+ }
+ var inbounds []safeInbound
+ if err:=database.GetDB().Model(&model.Inbound{}).Select("id, remark, protocol, port").Where("id IN ?",ids).Find(&inbounds).Error;err!=nil {
+  adminError(c,http.StatusInternalServerError,err);return
+ }
+ adminOK(c,inbounds)
+}
+func (a *AdminController) profile(c *gin.Context) {
+ if !a.owner(c){return}
+ id,ok:=a.target(c);if !ok{return}
+ item,err:=a.staff.GetProfile(a.actor(c),id)
+ if err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ adminOK(c,item)
+}
+func (a *AdminController) saveProfile(c *gin.Context) {
+ if !a.owner(c){return}
+ id,ok:=a.target(c);if !ok{return}
+ a.saveProfileFor(c,id)
+}
+func (a *AdminController) myProfile(c *gin.Context) {
+ item,err:=a.staff.GetProfile(a.actor(c),a.actor(c))
+ if err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ adminOK(c,item)
+}
+func (a *AdminController) saveMyProfile(c *gin.Context) {
+ a.saveProfileFor(c,a.actor(c))
+}
+func (a *AdminController) saveProfileFor(c *gin.Context,id int) {
+ var input model.StaffSubscriptionProfile
+ if err:=c.ShouldBindJSON(&input);err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ if err:=a.staff.SetProfile(a.actor(c),id,input);err!=nil{adminError(c,http.StatusBadRequest,err);return}
+ adminOK(c,true)
+}
