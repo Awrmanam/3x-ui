@@ -439,6 +439,37 @@ function StaffClientsPanel() {
     } finally { setBusy(false); }
   }
 
+  async function showLinks(clientEmail: string, subscription: boolean) {
+    const kind = subscription ? 'sub-links' : 'links';
+    const response = await HttpUtil.get<string[]>(
+      `${base}/me/clients/${encodeURIComponent(clientEmail)}/${kind}`,
+      undefined, { silent: true },
+    );
+    if (!response.success) {
+      messageApi.error(response.msg || 'Unable to fetch client links');
+      return;
+    }
+    const links = response.obj ?? [];
+    if (!links.length) { messageApi.warning('No links available'); return; }
+    Modal.info({
+      title: subscription ? 'Subscription links' : 'Configuration links',
+      width: 680,
+      content: (
+        <Space orientation="vertical" style={{ width: '100%' }}>
+          {links.map((url, i) => (
+            <Input.TextArea key={i} value={url} autoSize={{ minRows: 2, maxRows: 5 }}
+              readOnly onFocus={(event) => event.target.select()} />
+          ))}
+          <Button onClick={() => {
+            void navigator.clipboard.writeText(links.join('\n'))
+              .then(() => messageApi.success('Copied to clipboard'))
+              .catch(() => messageApi.warning('Select and copy the links manually'));
+          }}>Copy all</Button>
+        </Space>
+      ),
+    });
+  }
+
   async function deleteClient(clientEmail: string) {
     setBusy(true);
     try {
@@ -499,11 +530,16 @@ function StaffClientsPanel() {
               render: (v: number) => v > 0 ? new Date(v).toLocaleDateString() : 'Unlimited' },
             { title: 'Status', dataIndex: 'enable',
               render: (v: boolean) => <Tag color={v ? 'green' : 'default'}>{v ? 'Enabled' : 'Disabled'}</Tag> },
-            { title: 'Action', render: (_, record) => (
-              <Popconfirm title="Delete this client?" description="This removes its VPN credentials from all inbounds."
-                onConfirm={() => void deleteClient(record.email)}>
-                <Button danger size="small" loading={busy}>Delete</Button>
-              </Popconfirm>
+            { title: 'Actions', render: (_, record) => (
+              <Space>
+                <Button size="small" onClick={() => void showLinks(record.email, true)}>Subscription</Button>
+                <Button size="small" onClick={() => void showLinks(record.email, false)}>Configs</Button>
+                <Popconfirm title="Delete this client?"
+                  description="This removes its VPN credentials from all inbounds."
+                  onConfirm={() => void deleteClient(record.email)}>
+                  <Button danger size="small" loading={busy}>Delete</Button>
+                </Popconfirm>
+              </Space>
             ) },
           ]} />
       </Card>
