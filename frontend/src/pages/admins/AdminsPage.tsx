@@ -191,7 +191,16 @@ export default function AdminsPage() {
     <ConfigProvider theme={antdThemeConfig}>
       {messageHolder}
       <Layout>
-        <AppSidebar />
+        {isOwner ? <AppSidebar /> : (
+          <Layout.Sider theme="light" width={190} style={{ padding: 16 }}>
+            <Typography.Text strong>Reseller Panel</Typography.Text>
+            <Button block style={{ marginTop: 24 }}
+              onClick={() => { void HttpUtil.post('/logout', undefined, { silent: true })
+                .then(() => { window.location.href = window.X_UI_BASE_PATH || '/'; }); }}>
+              Logout
+            </Button>
+          </Layout.Sider>
+        )}
         <Layout className="content-shell">
           <Layout.Content id="content-layout" className="content-area">
             <Space orientation="vertical" size="large" style={{ width: '100%' }}>

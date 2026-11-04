@@ -6,6 +6,8 @@ import (
  "path/filepath"
  "testing"
 
+ "github.com/gin-contrib/sessions"
+ "github.com/gin-contrib/sessions/cookie"
  "github.com/gin-gonic/gin"
  "github.com/mhsanaei/3x-ui/v3/internal/authz"
  "github.com/mhsanaei/3x-ui/v3/internal/database"
@@ -40,6 +42,7 @@ func TestStaffAPIDeniesUnscopedLegacyRoutes(t *testing.T) {
  } {
   t.Run(tc.name,func(t *testing.T){
    router:=gin.New()
+   router.Use(sessions.Sessions("3x-ui",cookie.NewStore([]byte("sufficiently-long-test-cookie-secret"))))
    router.GET(tc.path,func(c *gin.Context){
     if tc.user!=nil{session.SetAPIAuthUser(c,tc.user)}
     c.Next()
