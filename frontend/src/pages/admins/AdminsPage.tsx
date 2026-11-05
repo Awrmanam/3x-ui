@@ -68,12 +68,7 @@ export default function AdminsPage() {
   );
   const profileTarget = isOwner ? selectedID : me?.id;
 
-  const loadIdentity = useCallback(async () => {
-    const result = await HttpUtil.get<Identity>(`${base}/me`, undefined, { silent: true });
-    if (result.success && result.obj) setMe(result.obj);
-    else messageApi.error(result.msg || 'Unable to load account identity');
-    setLoading(false);
-  }, [messageApi]);
+
 
   const refreshMembers = useCallback(async () => {
     const result = await HttpUtil.get<Staff[]>(`${base}/list`, undefined, { silent: true });
@@ -81,7 +76,14 @@ export default function AdminsPage() {
     else messageApi.error(result.msg || 'Unable to list staff accounts');
   }, [messageApi]);
 
-  useEffect(() => { void loadIdentity(); }, [loadIdentity]);
+  useEffect(() => {
+    void HttpUtil.get<Identity>(`${base}/me`, undefined, { silent: true })
+      .then((result) => {
+        if (result.success && result.obj) setMe(result.obj);
+        else messageApi.error(result.msg || 'Unable to load account identity');
+        setLoading(false);
+      });
+  }, [messageApi]);
 
   useEffect(() => {
     if (!me || !isOwner) return;
