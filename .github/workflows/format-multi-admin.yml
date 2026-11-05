@@ -1,0 +1,103 @@
+name: Format multi-admin feature branch
+
+on:
+  push:
+    branches:
+      - feature/multi-admin-rbac-foundation
+    paths:
+      - ".github/workflows/format-multi-admin.yml"
+      - "internal/authz/**"
+      - "internal/database/model/admin.go"
+      - "internal/database/db.go"
+      - "internal/database/migrate_data.go"
+      - "internal/web/service/panel/staff*.go"
+      - "internal/web/service/panel/user.go"
+      - "internal/web/session/session.go"
+      - "internal/web/controller/admin*.go"
+      - "internal/web/controller/api.go"
+      - "internal/web/controller/index.go"
+      - "internal/web/controller/spa.go"
+      - "internal/web/controller/websocket.go"
+      - "internal/sub/controller.go"
+      - "internal/sub/json_service.go"
+      - "internal/sub/clash_service.go"
+      - "internal/sub/placeholders.go"
+      - "frontend/src/pages/admins/**"
+      - "frontend/src/pages/api-docs/endpoints.ts"
+      - "frontend/src/layouts/AppSidebar.tsx"
+      - "frontend/src/layouts/PanelLayout.tsx"
+      - "frontend/src/routes/panelRoutes.tsx"
+      - "docs/multi-admin-rbac.md"
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.repository == 'Awrmanam/3x-ui' && github.ref == 'refs/heads/feature/multi-admin-rbac-foundation'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: true
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install Go formatter
+        run: go install mvdan.cc/gofumpt@v0.9.2
+      - name: Format changed Go source
+        run: |
+          "$(go env GOPATH)/bin/gofumpt" -w \
+            internal/authz/*.go \
+            internal/database/model/admin.go internal/database/db.go internal/database/migrate_data.go \
+            internal/web/service/panel/staff*.go internal/web/service/panel/user.go \
+            internal/web/session/session.go \
+            internal/web/controller/admin*.go internal/web/controller/api.go \
+            internal/web/controller/index.go internal/web/controller/spa.go \
+            internal/web/controller/websocket.go \
+            internal/sub/controller.go internal/sub/json_service.go \
+            internal/sub/clash_service.go internal/sub/placeholders.go
+      - name: Format frontend and architecture notes
+        run: |
+          cd frontend
+          npm ci
+          npx oxfmt --write \
+            src/pages/admins/AdminsPage.tsx \
+            src/pages/api-docs/endpoints.ts \
+            src/layouts/AppSidebar.tsx \
+            src/layouts/PanelLayout.tsx \
+            src/routes/panelRoutes.tsx
+          cd ../docs
+          ../frontend/node_modules/.bin/oxfmt --write multi-admin-rbac.md
+      - name: Regenerate OpenAPI and schemas
+        run: |
+          cd frontend
+          npm run gen
+          cp public/openapi.json ../docs/public/openapi.json
+      - name: Commit format-only changes to the feature branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add internal/authz internal/database/model/admin.go internal/database/db.go \
+            internal/database/migrate_data.go internal/web/service/panel \
+            internal/web/session/session.go internal/web/controller/admin.go \
+            internal/web/controller/admin_scope_test.go internal/web/controller/api.go \
+            internal/web/controller/index.go internal/web/controller/spa.go \
+            internal/web/controller/websocket.go internal/sub/controller.go \
+            internal/sub/json_service.go internal/sub/clash_service.go \
+            internal/sub/placeholders.go frontend/src/pages/admins/AdminsPage.tsx \
+            frontend/src/layouts/AppSidebar.tsx frontend/src/layouts/PanelLayout.tsx \
+            frontend/src/routes/panelRoutes.tsx frontend/src/pages/api-docs/endpoints.ts \
+            frontend/src/generated frontend/public/openapi.json \
+            docs/public/openapi.json docs/multi-admin-rbac.md
+          if ! git diff --cached --quiet; then
+            git commit -m "style: apply gofumpt and oxfmt to multi-admin implementation"
+            git push origin HEAD:feature/multi-admin-rbac-foundation
+          else
+            echo "No formatting changes needed"
+          fi

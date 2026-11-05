@@ -7,6 +7,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/mhsanaei/3x-ui/v3/internal/authz"
 	"github.com/mhsanaei/3x-ui/v3/internal/database"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 	"github.com/mhsanaei/3x-ui/v3/internal/logger"
@@ -98,12 +99,45 @@ func (a *SUBController) metadataForSubRequest(getSubReq func() *SubService, subI
 	// Disabled modes ignore the retained custom URL and never fall back to the request URL.
 	profileURL = renderSubPlaceholders(profileURL, subPlaceholderData{SubID: subID, Context: context, HasCtx: hasContext, Escape: true})
 	data := subPlaceholderData{SubID: subID, Context: context, HasCtx: hasContext}
-	return renderedSubMetadata{
+	metadata := renderedSubMetadata{
 		Title:      renderSubPlaceholders(a.subTitle, data),
 		SupportURL: renderSubPlaceholders(a.subSupportUrl, subPlaceholderData{SubID: subID, Context: context, HasCtx: hasContext, Escape: true}),
 		ProfileURL: profileURL,
 		Announce:   renderSubPlaceholders(a.subAnnounce, data),
 	}
+	// Resolve the reseller from the subscriber's *persisted* email ownership,
+	// never from a caller-controlled query string or host header. Other users'
+	// subscriptions continue to use the original global settings.
+	if override, ok := staffSubscriptionMetadata(subID); ok {
+		if override.Title != "" {
+			metadata.Title = override.Title
+		}
+		if override.SupportURL != "" {
+			metadata.SupportURL = override.SupportURL
+		} else if override.SupportID != "" {
+			metadata.SupportURL = "https://t.me/" + strings.TrimPrefix(override.SupportID, "@")
+		}
+	}
+	return metadata
+}
+
+// staffSubscriptionMetadata does not cache a cross-tenant subscription
+// profile; each request is resolved by the unique subscriber's stored email.
+func staffSubscriptionMetadata(subID string) (model.StaffSubscriptionProfile, bool) {
+	if strings.TrimSpace(subID) == "" {
+		return model.StaffSubscriptionProfile{}, false
+	}
+	db := database.GetDB()
+	if db == nil {
+		return model.StaffSubscriptionProfile{}, false
+	}
+	var profile model.StaffSubscriptionProfile
+	err := db.Model(&model.StaffSubscriptionProfile{}).
+		Joins("JOIN staff_client_ownership AS owner ON owner.user_id = staff_subscription_profiles.user_id").
+		Joins("JOIN clients ON clients.email = owner.email").
+		Where("clients.sub_id = ? AND owner.state = ?", subID, "active").
+		First(&profile).Error
+	return profile, err == nil
 }
 
 func (s *SubService) subscriptionTemplateContextBySubID(subID string) (remarkContext, bool, error) {
@@ -119,4 +153,15 @@ func (s *SubService) subscriptionTemplateContextBySubID(subID string) (remarkCon
 		return remarkContext{}, false, err
 	}
 	return remarkContext{client: *rec.ToClient()}, true, nil
+}
+
+// applyStaffRemarkTemplate uses a per-request SubService clone and an owner
+// resolved from the subscriber ledger. Never mutate the shared controller
+// SubService: otherwise concurrent resellers would bleed their names together.
+func (s *SubService) applyStaffRemarkTemplate(subID string) {
+	profile, ok := staffSubscriptionMetadata(subID)
+	if !ok || profile.RemarkTemplate == "" {
+		return
+	}
+	s.remarkTemplate = authz.CanonicalRemarkTemplate(profile.RemarkTemplate)
 }

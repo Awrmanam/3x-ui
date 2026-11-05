@@ -41,6 +41,7 @@ func (s *SubClashService) GetClashLegacy(subId string, host string) (string, str
 
 func (s *SubClashService) getClash(subId string, host string, legacy bool) (string, string, error) {
 	subReq := s.SubService.ForRequest(host)
+	subReq.applyStaffRemarkTemplate(subId)
 	subReq.subscriptionBody = true
 	inbounds, err := subReq.getInboundsBySubId(subId)
 	if err != nil {

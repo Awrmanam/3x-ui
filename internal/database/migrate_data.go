@@ -38,6 +38,12 @@ import (
 func migrationModels() []any {
 	return []any{
 		&model.User{},
+		&model.AdminRoot{},
+		&model.StaffAccount{},
+		&model.StaffPermission{},
+		&model.StaffInboundAssignment{},
+		&model.StaffSubscriptionProfile{},
+		&model.StaffClientOwnership{},
 		&model.Setting{},
 		&model.HistoryOfSeeders{},
 		&model.Node{},

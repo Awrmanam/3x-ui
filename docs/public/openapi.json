@@ -5068,6 +5068,10 @@
       "description": "A separate HTTP/HTTPS server that serves proxy subscription links (standard, JSON, and Clash) to clients. The server listens on its own port (default 2096) and is configured in Settings → Subscription. Fresh panels generate random path prefixes for each format; all paths remain configurable. Every subscription endpoint sets response headers for client apps to read traffic/expiry info."
     },
     {
+      "name": "Administrators and resellers",
+      "description": "Multi-admin feature branch: owner-only staff administration, tenant-scoped staff API, and subscription profile settings. Staff cannot use the legacy global clients or inbounds APIs. Do not deploy this draft before passing the isolation gate."
+    },
+    {
       "name": "WebSocket",
       "description": "Real-time status updates via WebSocket. Connect once at <code>ws://<panel>/ws</code> to receive a stream of JSON messages without polling. Requires an authenticated session cookie (Bearer token auth is not supported). Each message has a <code>type</code> field that identifies the payload shape."
     }
@@ -16149,6 +16153,750 @@
           },
           "500": {
             "description": "Subscription generation failed."
+          }
+        }
+      }
+    },
+    "/panel/api/admins/me": {
+      "get": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Read the current authenticated identity and role",
+        "operationId": "get_panel_api_admins_me",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/list": {
+      "get": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Owner-only list of staff accounts",
+        "operationId": "get_panel_api_admins_list",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/create": {
+      "post": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Owner-only staff account creation; initial role, password and enabled state",
+        "operationId": "post_panel_api_admins_create",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/{id}/update": {
+      "post": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Owner-only role, status and password update; invalidates sessions",
+        "operationId": "post_panel_api_admins_id_update",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Target staff account ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/{id}/permissions": {
+      "get": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Owner-only list of permission overrides",
+        "operationId": "get_panel_api_admins_id_permissions",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Target staff account ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Owner-only replacement of permission overrides",
+        "operationId": "post_panel_api_admins_id_permissions",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Target staff account ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/{id}/inbounds": {
+      "get": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Owner-only list of assigned inbound IDs and create grants",
+        "operationId": "get_panel_api_admins_id_inbounds",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Target staff account ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Owner-only replacement of assigned shared inbounds",
+        "operationId": "post_panel_api_admins_id_inbounds",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Target staff account ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/{id}/profile": {
+      "get": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Owner-only subscription-branding profile read",
+        "operationId": "get_panel_api_admins_id_profile",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Target staff account ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Owner-only subscription-branding profile update",
+        "operationId": "post_panel_api_admins_id_profile",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Target staff account ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/me/profile": {
+      "get": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Read the current staff member's own branding profile",
+        "operationId": "get_panel_api_admins_me_profile",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Update own branding profile when templates.manage is allowed",
+        "operationId": "post_panel_api_admins_me_profile",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/me/inbounds": {
+      "get": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Read safe metadata for only explicitly assigned inbounds",
+        "operationId": "get_panel_api_admins_me_inbounds",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/me/clients": {
+      "get": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Read only clients created and owned by this staff account",
+        "operationId": "get_panel_api_admins_me_clients",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/me/clients/{email}": {
+      "get": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Read one own client's record by exact canonical email",
+        "operationId": "get_panel_api_admins_me_clients_email",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "path",
+            "required": true,
+            "description": "Globally unique, persisted client email identifier.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/me/clients/{email}/links": {
+      "get": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Read own client's generated config links",
+        "operationId": "get_panel_api_admins_me_clients_email_links",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "path",
+            "required": true,
+            "description": "Globally unique, persisted client email identifier.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/me/clients/{email}/sub-links": {
+      "get": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Read own client's subscription URLs",
+        "operationId": "get_panel_api_admins_me_clients_email_sub_links",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "path",
+            "required": true,
+            "description": "Globally unique, persisted client email identifier.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/me/clients/create": {
+      "post": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Create a client only on approved writable inbounds",
+        "operationId": "post_panel_api_admins_me_clients_create",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/me/clients/update/{email}": {
+      "post": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Update a client owned by this staff account",
+        "operationId": "post_panel_api_admins_me_clients_update_email",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "path",
+            "required": true,
+            "description": "Globally unique, persisted client email identifier.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/me/clients/delete/{email}": {
+      "post": {
+        "tags": [
+          "Administrators and resellers"
+        ],
+        "summary": "Delete a client owned by this staff account",
+        "operationId": "post_panel_api_admins_me_clients_delete_email",
+        "description": "Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "path",
+            "required": true,
+            "description": "Globally unique, persisted client email identifier.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
           }
         }
       }

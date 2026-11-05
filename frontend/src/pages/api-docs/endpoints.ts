@@ -2830,6 +2830,251 @@ export const sections: readonly Section[] = [
   },
 
   {
+    id: 'administrators',
+    title: 'Administrators and resellers',
+    description:
+      'Multi-admin feature branch: owner-only staff administration, tenant-scoped staff API, and subscription profile settings. Staff cannot use the legacy global clients or inbounds APIs. Do not deploy this draft before passing the isolation gate.',
+    endpoints: [
+      {
+        method: 'GET',
+        path: '/panel/api/admins/me',
+        summary: 'Read the current authenticated identity and role',
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/admins/list',
+        summary: 'Owner-only list of staff accounts',
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/create',
+        summary: 'Owner-only staff account creation; initial role, password and enabled state',
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/:id/update',
+        summary: 'Owner-only role, status and password update; invalidates sessions',
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+        params: [
+          {
+            name: 'id',
+            in: 'path',
+            type: 'integer',
+            desc: 'Target staff account ID.',
+          },
+        ],
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/admins/:id/permissions',
+        summary: 'Owner-only list of permission overrides',
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+        params: [
+          {
+            name: 'id',
+            in: 'path',
+            type: 'integer',
+            desc: 'Target staff account ID.',
+          },
+        ],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/:id/permissions',
+        summary: 'Owner-only replacement of permission overrides',
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+        params: [
+          {
+            name: 'id',
+            in: 'path',
+            type: 'integer',
+            desc: 'Target staff account ID.',
+          },
+        ],
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/admins/:id/inbounds',
+        summary: 'Owner-only list of assigned inbound IDs and create grants',
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+        params: [
+          {
+            name: 'id',
+            in: 'path',
+            type: 'integer',
+            desc: 'Target staff account ID.',
+          },
+        ],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/:id/inbounds',
+        summary: 'Owner-only replacement of assigned shared inbounds',
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+        params: [
+          {
+            name: 'id',
+            in: 'path',
+            type: 'integer',
+            desc: 'Target staff account ID.',
+          },
+        ],
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/admins/:id/profile',
+        summary: 'Owner-only subscription-branding profile read',
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+        params: [
+          {
+            name: 'id',
+            in: 'path',
+            type: 'integer',
+            desc: 'Target staff account ID.',
+          },
+        ],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/:id/profile',
+        summary: 'Owner-only subscription-branding profile update',
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+        params: [
+          {
+            name: 'id',
+            in: 'path',
+            type: 'integer',
+            desc: 'Target staff account ID.',
+          },
+        ],
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/admins/me/profile',
+        summary: "Read the current staff member's own branding profile",
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/me/profile',
+        summary: 'Update own branding profile when templates.manage is allowed',
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/admins/me/inbounds',
+        summary: 'Read safe metadata for only explicitly assigned inbounds',
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/admins/me/clients',
+        summary: 'Read only clients created and owned by this staff account',
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/admins/me/clients/:email',
+        summary: "Read one own client's record by exact canonical email",
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+        params: [
+          {
+            name: 'email',
+            in: 'path',
+            type: 'string',
+            desc: 'Globally unique, persisted client email identifier.',
+          },
+        ],
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/admins/me/clients/:email/links',
+        summary: "Read own client's generated config links",
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+        params: [
+          {
+            name: 'email',
+            in: 'path',
+            type: 'string',
+            desc: 'Globally unique, persisted client email identifier.',
+          },
+        ],
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/admins/me/clients/:email/sub-links',
+        summary: "Read own client's subscription URLs",
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+        params: [
+          {
+            name: 'email',
+            in: 'path',
+            type: 'string',
+            desc: 'Globally unique, persisted client email identifier.',
+          },
+        ],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/me/clients/create',
+        summary: 'Create a client only on approved writable inbounds',
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/me/clients/update/:email',
+        summary: 'Update a client owned by this staff account',
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+        params: [
+          {
+            name: 'email',
+            in: 'path',
+            type: 'string',
+            desc: 'Globally unique, persisted client email identifier.',
+          },
+        ],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/me/clients/delete/:email',
+        summary: 'Delete a client owned by this staff account',
+        description:
+          'Feature branch prototype. Requires an authenticated owner or staff session and server-side role and ownership checks; the legacy panel API is not available to staff.',
+        params: [
+          {
+            name: 'email',
+            in: 'path',
+            type: 'string',
+            desc: 'Globally unique, persisted client email identifier.',
+          },
+        ],
+      },
+    ],
+  },
+
+  {
     id: 'websocket',
     title: 'WebSocket',
     description:
