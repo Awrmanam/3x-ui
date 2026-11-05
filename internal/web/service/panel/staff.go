@@ -69,7 +69,7 @@ func staffRoleAllowed(role authz.Role) bool {
 func validStaffUsername(username string) bool {
  if len(username)<3||len(username)>64{return false}
  for _,r:=range username {
-  if !((r>='a'&&r<='z')||(r>='A'&&r<='Z')||(r>='0'&&r<='9')||r=='_'||r=='-'||r=='.'){return false}
+  if !strings.ContainsRune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.",r){return false}
  }
  return true
 }
