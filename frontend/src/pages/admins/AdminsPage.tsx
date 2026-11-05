@@ -5,6 +5,7 @@ import {
 } from 'antd';
 import { useTheme } from '@/hooks/useTheme';
 import AppSidebar from '@/layouts/AppSidebar';
+import { selectTagRender } from '@/components/form/SelectTag';
 import { HttpUtil } from '@/utils';
 
 type Role = 'owner' | 'sudo' | 'admin' | 'reseller' | 'custom';
@@ -68,7 +69,6 @@ export default function AdminsPage() {
   const profileTarget = isOwner ? selectedID : me?.id;
 
   const loadIdentity = useCallback(async () => {
-    setLoading(true);
     const result = await HttpUtil.get<Identity>(`${base}/me`, undefined, { silent: true });
     if (result.success && result.obj) setMe(result.obj);
     else messageApi.error(result.msg || 'Unable to load account identity');
@@ -85,7 +85,8 @@ export default function AdminsPage() {
 
   useEffect(() => {
     if (!me || !isOwner) return;
-    void refreshMembers();
+    void HttpUtil.get<Staff[]>(`${base}/list`, undefined, { silent: true })
+      .then((response) => { if (response.success) setMembers(response.obj ?? []); });
     void HttpUtil.get<InboundOption[]>('/panel/api/inbounds/options', undefined, { silent: true })
       .then((response) => { if (response.success) setInbounds(response.obj ?? []); });
   }, [me, isOwner, refreshMembers]);
@@ -102,10 +103,7 @@ export default function AdminsPage() {
       } else setProfile(emptyProfile);
     });
     if (!isOwner) return;
-    const member = members.find((m) => m.userId === userID);
-    if (member) { setEditRole(member.role); setEditEnabled(member.enabled); }
-    setResetPassword('');
-    void HttpUtil.get<Permission[]>(`${base}/${userID}/permissions`, undefined, { silent: true })
+     void HttpUtil.get<Permission[]>(`${base}/${userID}/permissions`, undefined, { silent: true })
       .then((response) => {
         const next: Record<string, Scope> = {};
         for (const grant of response.obj ?? []) next[grant.action] = grant.scope;
@@ -180,7 +178,7 @@ export default function AdminsPage() {
     return (
       <Col xs={24} md={12} key={key}>
         <Typography.Text>{label}</Typography.Text>
-        <Input value={profile[key]} placeholder={placeholder}
+        <Input aria-label={label} value={profile[key]} placeholder={placeholder}
           onChange={(e) => setProfile((old) => ({ ...old, [key]: e.target.value }))}
           maxLength={256} />
       </Col>
@@ -229,7 +227,16 @@ export default function AdminsPage() {
                           rowSelection={{
                             type: 'radio',
                             selectedRowKeys: selectedID == null ? [] : [selectedID],
-                            onChange: (ids) => setSelectedID(Number(ids[0])),
+                            onChange: (ids) => {
+                              const id = Number(ids[0]);
+                              const member = members.find((m) => m.userId === id);
+                              if (member) {
+                                setEditRole(member.role);
+                                setEditEnabled(member.enabled);
+                              }
+                              setResetPassword('');
+                              setSelectedID(id);
+                            },
                           }}
                           columns={[
                             { title: 'Username', dataIndex: 'username', key: 'username' },
@@ -244,17 +251,17 @@ export default function AdminsPage() {
                           <Row gutter={[16, 16]}>
                             <Col xs={24} md={8}>
                               <Typography.Text>Role preset</Typography.Text>
-                              <Select value={editRole} style={{ width: '100%' }}
+                              <Select aria-label="Role preset" value={editRole} style={{ width: '100%' }}
                                 onChange={setEditRole}
                                 options={roles.map((role) => ({ label: role.toUpperCase(), value: role }))} />
                             </Col>
                             <Col xs={24} md={8}>
                               <Typography.Text>Account enabled</Typography.Text>
-                              <div><Switch checked={editEnabled} onChange={setEditEnabled} /></div>
+                              <div><Switch aria-label="Account enabled" checked={editEnabled} onChange={setEditEnabled} /></div>
                             </Col>
                             <Col xs={24} md={8}>
                               <Typography.Text>New password (optional)</Typography.Text>
-                              <Input.Password value={resetPassword} onChange={(e) => setResetPassword(e.target.value)}
+                              <Input.Password aria-label="New password (optional)" value={resetPassword} onChange={(e) => setResetPassword(e.target.value)}
                                 autoComplete="new-password" placeholder="Minimum 12 characters" />
                             </Col>
                             <Col span={24}><Button loading={saving} type="primary" onClick={() => void updateUser()}>Save account</Button></Col>
@@ -269,7 +276,7 @@ export default function AdminsPage() {
                             {permissionActions.map((action) => (
                               <Col key={action} xs={24} md={12} xl={8}>
                                 <Typography.Text style={{ display: 'block' }}>{action}</Typography.Text>
-                                <Select style={{ width: '100%' }} value={overrides[action] ?? 'inherit'}
+                                <Select aria-label={`Permission override for ${action}`} style={{ width: '100%' }} value={overrides[action] ?? 'inherit'}
                                   onChange={(scope) => {
                                     setOverrides((prev) => {
                                       const next = { ...prev };
@@ -290,7 +297,7 @@ export default function AdminsPage() {
                       {selected && (
                         <Card title="Assigned inbounds"
                           extra={<Button loading={saving} onClick={() => void saveAssignments()} type="primary">Save assignments</Button>}>
-                          <Select mode="multiple" style={{ width: '100%' }} placeholder="Choose shared inbounds"
+                          <Select aria-label="Assigned inbounds" mode="multiple" tagRender={selectTagRender} style={{ width: '100%' }} placeholder="Choose shared inbounds"
                             value={Object.keys(assignments).map(Number)}
                             options={inbounds.map((ib) => ({
                               label: `#${ib.id} · ${ib.remark} · ${ib.protocol}:${ib.port}`, value: ib.id,
@@ -304,7 +311,7 @@ export default function AdminsPage() {
                             {Object.entries(assignments).map(([id, canCreate]) => (
                               <Space key={id}>
                                 <Typography.Text>Inbound #{id} — can create clients</Typography.Text>
-                                <Switch checked={canCreate}
+                                <Switch aria-label={`Allow creating clients on inbound ${id}`} checked={canCreate}
                                   onChange={(value) => setAssignments((prev) => ({ ...prev, [Number(id)]: value }))} />
                               </Space>
                             ))}
@@ -408,7 +415,8 @@ function StaffClientsPanel() {
   }, [messageApi]);
 
   useEffect(() => {
-    void refresh();
+    void HttpUtil.get<OwnClient[]>(`${base}/me/clients`, undefined, { silent: true })
+      .then((response) => { if (response.success) setMembers(response.obj ?? []); });
     void HttpUtil.get<StaffInbound[]>(`${base}/me/inbounds`, undefined, { silent: true })
       .then((r) => { if (r.success) setInbounds(r.obj ?? []); });
   }, [refresh]);
@@ -457,7 +465,7 @@ function StaffClientsPanel() {
       content: (
         <Space orientation="vertical" style={{ width: '100%' }}>
           {links.map((url, i) => (
-            <Input.TextArea key={i} value={url} autoSize={{ minRows: 2, maxRows: 5 }}
+            <Input.TextArea key={i} aria-label={`Link ${i + 1}`} value={url} autoSize={{ minRows: 2, maxRows: 5 }}
               readOnly onFocus={(event) => event.target.select()} />
           ))}
           <Button onClick={() => {
@@ -489,22 +497,22 @@ function StaffClientsPanel() {
         <Row gutter={[12, 12]}>
           <Col xs={24} md={10}>
             <Typography.Text>Client email / identifier</Typography.Text>
-            <Input value={email} onChange={(e) => setEmail(e.target.value)}
+            <Input aria-label="Client email / identifier" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="customer001" maxLength={128} />
           </Col>
           <Col xs={12} md={7}>
             <Typography.Text>Traffic quota (GiB)</Typography.Text>
-            <InputNumber min={1} max={100000} value={quotaGB}
+            <InputNumber aria-label="Traffic quota in GiB" min={1} max={100000} value={quotaGB}
               onChange={(value) => setQuotaGB(value ?? 50)} style={{ width: '100%' }} />
           </Col>
           <Col xs={12} md={7}>
             <Typography.Text>Validity (days, 0 = unlimited)</Typography.Text>
-            <InputNumber min={0} max={3650} value={durationDays}
+            <InputNumber aria-label="Validity in days" min={0} max={3650} value={durationDays}
               onChange={(value) => setDurationDays(value ?? 30)} style={{ width: '100%' }} />
           </Col>
           <Col span={24}>
             <Typography.Text>Writable inbounds</Typography.Text>
-            <Select mode="multiple" style={{ width: '100%' }} value={selected}
+            <Select aria-label="Writable inbounds" mode="multiple" tagRender={selectTagRender} style={{ width: '100%' }} value={selected}
               onChange={setSelected}
               options={inbounds.filter((ib) => ib.canCreate).map((ib) => ({
                 value: ib.id, label: `#${ib.id} - ${ib.remark} (${ib.protocol})`,
