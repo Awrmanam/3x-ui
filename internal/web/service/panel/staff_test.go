@@ -132,3 +132,22 @@ func TestStaffClientLedgerFailsClosedAcrossResellers(t *testing.T) {
  if _,err:=clients.Get(alice.UserID,"legacy-vpn");err==nil{t.Fatal("alice adopted legacy owner client")}
  if _,err:=clients.List(owner);err==nil{t.Fatal("owner unexpectedly routed through staff clients")}
 }
+
+
+func TestOwnerAnchorNeverReassignsToReseller(t *testing.T) {
+ svc,owner:=initStaffTestDB(t)
+ alice:=createTestStaff(t,svc,owner,"tenant_after_owner")
+ if err:=database.GetDB().Where("id = ?",owner).Delete(&model.User{}).Error;err!=nil{t.Fatal(err)}
+ if _,err:=svc.OwnerID();err==nil{t.Fatal("orphaned bootstrap owner automatically reassigned")}
+ if svc.IsOwner(alice.UserID){t.Fatal("reseller escalated after owner deletion")}
+}
+
+func TestDisabledStaffCannotReadOwnLedger(t *testing.T) {
+ svc,owner:=initStaffTestDB(t)
+ staff:=createTestStaff(t,svc,owner,"tenant_disabled")
+ disabled:=false
+ if err:=svc.Update(owner,staff.UserID,StaffUpdateInput{Enabled:&disabled});err!=nil{t.Fatal(err)}
+ if _,err:= (StaffClientService{}).List(staff.UserID);err==nil{
+  t.Fatal("disabled staff retained client list access")
+ }
+}
