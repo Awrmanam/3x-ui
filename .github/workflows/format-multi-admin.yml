@@ -69,8 +69,9 @@ jobs:
             src/pages/admins/AdminsPage.tsx \
             src/layouts/AppSidebar.tsx \
             src/layouts/PanelLayout.tsx \
-            src/routes/panelRoutes.tsx \
-            ../docs/multi-admin-rbac.md
+            src/routes/panelRoutes.tsx
+          cd ../docs
+          ../frontend/node_modules/.bin/oxfmt --write multi-admin-rbac.md
       - name: Commit format-only changes to the feature branch
         run: |
           git config user.name "github-actions[bot]"
