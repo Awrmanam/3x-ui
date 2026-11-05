@@ -1,7 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Alert, Button, Card, Col, ConfigProvider, Form, Input, InputNumber, Layout, Modal, Popconfirm, Row,
-  Select, Space, Spin, Switch, Table, Tag, Typography, message,
+  Alert,
+  Button,
+  Card,
+  Col,
+  ConfigProvider,
+  Form,
+  Input,
+  InputNumber,
+  Layout,
+  Modal,
+  Popconfirm,
+  Row,
+  Select,
+  Space,
+  Spin,
+  Switch,
+  Table,
+  Tag,
+  Typography,
+  message,
 } from 'antd';
 import { useTheme } from '@/hooks/useTheme';
 import AppSidebar from '@/layouts/AppSidebar';
@@ -30,17 +48,43 @@ const base = '/panel/api/admins';
 const roles: Role[] = ['sudo', 'admin', 'reseller', 'custom'];
 const scopes: Scope[] = ['none', 'own', 'assigned', 'own_or_assigned', 'all'];
 const permissionActions = [
-  'admins.read', 'inbounds.read', 'inbounds.create', 'inbounds.update', 'inbounds.delete',
-  'clients.read', 'clients.create', 'clients.update', 'clients.delete', 'clients.reset_traffic',
-  'subscriptions.read', 'subscriptions.manage', 'templates.manage', 'hosts.read',
-  'hosts.manage', 'nodes.read', 'nodes.manage', 'traffic.read', 'settings.read',
-  'settings.manage', 'routing.manage', 'tokens.manage', 'backups.export',
-  'backups.restore', 'system.read', 'system.manage', 'audit.read',
+  'admins.read',
+  'inbounds.read',
+  'inbounds.create',
+  'inbounds.update',
+  'inbounds.delete',
+  'clients.read',
+  'clients.create',
+  'clients.update',
+  'clients.delete',
+  'clients.reset_traffic',
+  'subscriptions.read',
+  'subscriptions.manage',
+  'templates.manage',
+  'hosts.read',
+  'hosts.manage',
+  'nodes.read',
+  'nodes.manage',
+  'traffic.read',
+  'settings.read',
+  'settings.manage',
+  'routing.manage',
+  'tokens.manage',
+  'backups.export',
+  'backups.restore',
+  'system.read',
+  'system.manage',
+  'audit.read',
 ] as const;
 
 const emptyProfile: SubProfile = {
-  title: '', supportId: '', supportUrl: '', remarkTemplate: '',
-  shareLinkTemplate: '', pageTemplate: '', subscriptionBaseUrl: '',
+  title: '',
+  supportId: '',
+  supportUrl: '',
+  remarkTemplate: '',
+  shareLinkTemplate: '',
+  pageTemplate: '',
+  subscriptionBaseUrl: '',
 };
 
 export default function AdminsPage() {
@@ -68,8 +112,6 @@ export default function AdminsPage() {
   );
   const profileTarget = isOwner ? selectedID : me?.id;
 
-
-
   const refreshMembers = useCallback(async () => {
     const result = await HttpUtil.get<Staff[]>(`${base}/list`, undefined, { silent: true });
     if (result.success) setMembers(result.obj ?? []);
@@ -77,20 +119,23 @@ export default function AdminsPage() {
   }, [messageApi]);
 
   useEffect(() => {
-    void HttpUtil.get<Identity>(`${base}/me`, undefined, { silent: true })
-      .then((result) => {
-        if (result.success && result.obj) setMe(result.obj);
-        else messageApi.error(result.msg || 'Unable to load account identity');
-        setLoading(false);
-      });
+    void HttpUtil.get<Identity>(`${base}/me`, undefined, { silent: true }).then((result) => {
+      if (result.success && result.obj) setMe(result.obj);
+      else messageApi.error(result.msg || 'Unable to load account identity');
+      setLoading(false);
+    });
   }, [messageApi]);
 
   useEffect(() => {
     if (!me || !isOwner) return;
-    void HttpUtil.get<Staff[]>(`${base}/list`, undefined, { silent: true })
-      .then((response) => { if (response.success) setMembers(response.obj ?? []); });
-    void HttpUtil.get<InboundOption[]>('/panel/api/inbounds/options', undefined, { silent: true })
-      .then((response) => { if (response.success) setInbounds(response.obj ?? []); });
+    void HttpUtil.get<Staff[]>(`${base}/list`, undefined, { silent: true }).then((response) => {
+      if (response.success) setMembers(response.obj ?? []);
+    });
+    void HttpUtil.get<InboundOption[]>('/panel/api/inbounds/options', undefined, {
+      silent: true,
+    }).then((response) => {
+      if (response.success) setInbounds(response.obj ?? []);
+    });
   }, [me, isOwner, refreshMembers]);
 
   useEffect(() => {
@@ -105,36 +150,47 @@ export default function AdminsPage() {
       } else setProfile(emptyProfile);
     });
     if (!isOwner) return;
-     void HttpUtil.get<Permission[]>(`${base}/${userID}/permissions`, undefined, { silent: true })
-      .then((response) => {
-        const next: Record<string, Scope> = {};
-        for (const grant of response.obj ?? []) next[grant.action] = grant.scope;
-        setOverrides(next);
-      });
-    void HttpUtil.get<Assignment[]>(`${base}/${userID}/inbounds`, undefined, { silent: true })
-      .then((response) => {
+    void HttpUtil.get<Permission[]>(`${base}/${userID}/permissions`, undefined, {
+      silent: true,
+    }).then((response) => {
+      const next: Record<string, Scope> = {};
+      for (const grant of response.obj ?? []) next[grant.action] = grant.scope;
+      setOverrides(next);
+    });
+    void HttpUtil.get<Assignment[]>(`${base}/${userID}/inbounds`, undefined, { silent: true }).then(
+      (response) => {
         const next: Record<number, boolean> = {};
         for (const grant of response.obj ?? []) next[grant.inboundId] = grant.canCreate;
         setAssignments(next);
-      });
+      },
+    );
   }, [me, isOwner, selectedID, members]);
 
-  const exec = useCallback(async (operation: () => Promise<{ success: boolean; msg: string }>, success: string) => {
-    setSaving(true);
-    try {
-      const response = await operation();
-      if (!response.success) messageApi.error(response.msg || 'Operation failed');
-      else messageApi.success(success);
-      return response.success;
-    } finally { setSaving(false); }
-  }, [messageApi]);
+  const exec = useCallback(
+    async (operation: () => Promise<{ success: boolean; msg: string }>, success: string) => {
+      setSaving(true);
+      try {
+        const response = await operation();
+        if (!response.success) messageApi.error(response.msg || 'Operation failed');
+        else messageApi.success(success);
+        return response.success;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [messageApi],
+  );
 
   async function createUser(values: CreateInput) {
     const ok = await exec(
       () => HttpUtil.post(`${base}/create`, values, { silent: true }),
       'Account created',
     );
-    if (ok) { setCreateVisible(false); createForm.resetFields(); await refreshMembers(); }
+    if (ok) {
+      setCreateVisible(false);
+      createForm.resetFields();
+      await refreshMembers();
+    }
   }
 
   async function updateUser() {
@@ -145,7 +201,10 @@ export default function AdminsPage() {
       () => HttpUtil.post(`${base}/${selectedID}/update`, payload, { silent: true }),
       'Account updated and old sessions revoked',
     );
-    if (ok) { setResetPassword(''); await refreshMembers(); }
+    if (ok) {
+      setResetPassword('');
+      await refreshMembers();
+    }
   }
 
   async function savePermissions() {
@@ -162,7 +221,8 @@ export default function AdminsPage() {
   async function saveAssignments() {
     if (selectedID == null) return;
     const rows = Object.entries(assignments).map(([inboundId, canCreate]) => ({
-      inboundId: Number(inboundId), canCreate,
+      inboundId: Number(inboundId),
+      canCreate,
     }));
     await exec(
       () => HttpUtil.post(`${base}/${selectedID}/inbounds`, { inbounds: rows }, { silent: true }),
@@ -180,9 +240,13 @@ export default function AdminsPage() {
     return (
       <Col xs={24} md={12} key={key}>
         <Typography.Text>{label}</Typography.Text>
-        <Input aria-label={label} value={profile[key]} placeholder={placeholder}
+        <Input
+          aria-label={label}
+          value={profile[key]}
+          placeholder={placeholder}
           onChange={(e) => setProfile((old) => ({ ...old, [key]: e.target.value }))}
-          maxLength={256} />
+          maxLength={256}
+        />
       </Col>
     );
   }
@@ -191,12 +255,20 @@ export default function AdminsPage() {
     <ConfigProvider theme={antdThemeConfig}>
       {messageHolder}
       <Layout>
-        {isOwner ? <AppSidebar /> : (
+        {isOwner ? (
+          <AppSidebar />
+        ) : (
           <Layout.Sider theme="light" width={190} style={{ padding: 16 }}>
             <Typography.Text strong>Reseller Panel</Typography.Text>
-            <Button block style={{ marginTop: 24 }}
-              onClick={() => { void HttpUtil.post('/logout', undefined, { silent: true })
-                .then(() => { window.location.href = window.X_UI_BASE_PATH || '/'; }); }}>
+            <Button
+              block
+              style={{ marginTop: 24 }}
+              onClick={() => {
+                void HttpUtil.post('/logout', undefined, { silent: true }).then(() => {
+                  window.location.href = window.X_UI_BASE_PATH || '/';
+                });
+              }}
+            >
               Logout
             </Button>
           </Layout.Sider>
@@ -205,10 +277,15 @@ export default function AdminsPage() {
           <Layout.Content id="content-layout" className="content-area">
             <Space orientation="vertical" size="large" style={{ width: '100%' }}>
               <Typography.Title level={3}>Administrators & resellers</Typography.Title>
-              <Alert type="warning" showIcon
+              <Alert
+                type="warning"
+                showIcon
                 title="Safe rollout"
-                description="Staff accounts can sign in and maintain their profiles, but legacy client and inbound APIs remain blocked until tenant isolation and subscription delivery are fully integrated. Profile templates are stored but not yet served to customers." />
-              {loading ? <Spin /> : !me ? (
+                description="Staff accounts can sign in and maintain their profiles, but legacy client and inbound APIs remain blocked until tenant isolation and subscription delivery are fully integrated. Profile templates are stored but not yet served to customers."
+              />
+              {loading ? (
+                <Spin />
+              ) : !me ? (
                 <Alert type="error" title="Account identity could not be loaded" />
               ) : (
                 <>
@@ -222,9 +299,24 @@ export default function AdminsPage() {
 
                   {isOwner && (
                     <>
-                      <Card title="Staff accounts"
-                        extra={<Button type="primary" onClick={() => { createForm.resetFields(); setCreateVisible(true); }}>Create administrator</Button>}>
-                        <Table<Staff> size="small" rowKey="userId" pagination={{ pageSize: 10 }}
+                      <Card
+                        title="Staff accounts"
+                        extra={
+                          <Button
+                            type="primary"
+                            onClick={() => {
+                              createForm.resetFields();
+                              setCreateVisible(true);
+                            }}
+                          >
+                            Create administrator
+                          </Button>
+                        }
+                      >
+                        <Table<Staff>
+                          size="small"
+                          rowKey="userId"
+                          pagination={{ pageSize: 10 }}
                           dataSource={members}
                           rowSelection={{
                             type: 'radio',
@@ -243,7 +335,16 @@ export default function AdminsPage() {
                           columns={[
                             { title: 'Username', dataIndex: 'username', key: 'username' },
                             { title: 'Role', dataIndex: 'role', key: 'role' },
-                            { title: 'Status', key: 'enabled', render: (_, row) => row.enabled ? <Tag color="green">Enabled</Tag> : <Tag>Disabled</Tag> },
+                            {
+                              title: 'Status',
+                              key: 'enabled',
+                              render: (_, row) =>
+                                row.enabled ? (
+                                  <Tag color="green">Enabled</Tag>
+                                ) : (
+                                  <Tag>Disabled</Tag>
+                                ),
+                            },
                             { title: 'Account ID', dataIndex: 'userId', key: 'userId' },
                           ]}
                         />
@@ -253,32 +354,76 @@ export default function AdminsPage() {
                           <Row gutter={[16, 16]}>
                             <Col xs={24} md={8}>
                               <Typography.Text>Role preset</Typography.Text>
-                              <Select aria-label="Role preset" value={editRole} style={{ width: '100%' }}
+                              <Select
+                                aria-label="Role preset"
+                                value={editRole}
+                                style={{ width: '100%' }}
                                 onChange={setEditRole}
-                                options={roles.map((role) => ({ label: role.toUpperCase(), value: role }))} />
+                                options={roles.map((role) => ({
+                                  label: role.toUpperCase(),
+                                  value: role,
+                                }))}
+                              />
                             </Col>
                             <Col xs={24} md={8}>
                               <Typography.Text>Account enabled</Typography.Text>
-                              <div><Switch aria-label="Account enabled" checked={editEnabled} onChange={setEditEnabled} /></div>
+                              <div>
+                                <Switch
+                                  aria-label="Account enabled"
+                                  checked={editEnabled}
+                                  onChange={setEditEnabled}
+                                />
+                              </div>
                             </Col>
                             <Col xs={24} md={8}>
                               <Typography.Text>New password (optional)</Typography.Text>
-                              <Input.Password aria-label="New password (optional)" value={resetPassword} onChange={(e) => setResetPassword(e.target.value)}
-                                autoComplete="new-password" placeholder="Minimum 12 characters" />
+                              <Input.Password
+                                aria-label="New password (optional)"
+                                value={resetPassword}
+                                onChange={(e) => setResetPassword(e.target.value)}
+                                autoComplete="new-password"
+                                placeholder="Minimum 12 characters"
+                              />
                             </Col>
-                            <Col span={24}><Button loading={saving} type="primary" onClick={() => void updateUser()}>Save account</Button></Col>
+                            <Col span={24}>
+                              <Button
+                                loading={saving}
+                                type="primary"
+                                onClick={() => void updateUser()}
+                              >
+                                Save account
+                              </Button>
+                            </Col>
                           </Row>
                         </Card>
                       )}
                       {selected && (
-                        <Card title="Granular permission overrides"
-                          extra={<Button loading={saving} type="primary" onClick={() => void savePermissions()}>Save permissions</Button>}>
-                          <Typography.Paragraph type="secondary">Inherit uses role defaults. Explicit overrides can be revoked at any time.</Typography.Paragraph>
+                        <Card
+                          title="Granular permission overrides"
+                          extra={
+                            <Button
+                              loading={saving}
+                              type="primary"
+                              onClick={() => void savePermissions()}
+                            >
+                              Save permissions
+                            </Button>
+                          }
+                        >
+                          <Typography.Paragraph type="secondary">
+                            Inherit uses role defaults. Explicit overrides can be revoked at any
+                            time.
+                          </Typography.Paragraph>
                           <Row gutter={[12, 12]}>
                             {permissionActions.map((action) => (
                               <Col key={action} xs={24} md={12} xl={8}>
-                                <Typography.Text style={{ display: 'block' }}>{action}</Typography.Text>
-                                <Select aria-label={`Permission override for ${action}`} style={{ width: '100%' }} value={overrides[action] ?? 'inherit'}
+                                <Typography.Text style={{ display: 'block' }}>
+                                  {action}
+                                </Typography.Text>
+                                <Select
+                                  aria-label={`Permission override for ${action}`}
+                                  style={{ width: '100%' }}
+                                  value={overrides[action] ?? 'inherit'}
                                   onChange={(scope) => {
                                     setOverrides((prev) => {
                                       const next = { ...prev };
@@ -290,31 +435,58 @@ export default function AdminsPage() {
                                   options={[
                                     { label: 'Inherit preset', value: 'inherit' },
                                     ...scopes.map((scope) => ({ label: scope, value: scope })),
-                                  ]} />
+                                  ]}
+                                />
                               </Col>
                             ))}
                           </Row>
                         </Card>
                       )}
                       {selected && (
-                        <Card title="Assigned inbounds"
-                          extra={<Button loading={saving} onClick={() => void saveAssignments()} type="primary">Save assignments</Button>}>
-                          <Select aria-label="Assigned inbounds" mode="multiple" tagRender={selectTagRender} style={{ width: '100%' }} placeholder="Choose shared inbounds"
+                        <Card
+                          title="Assigned inbounds"
+                          extra={
+                            <Button
+                              loading={saving}
+                              onClick={() => void saveAssignments()}
+                              type="primary"
+                            >
+                              Save assignments
+                            </Button>
+                          }
+                        >
+                          <Select
+                            aria-label="Assigned inbounds"
+                            mode="multiple"
+                            tagRender={selectTagRender}
+                            style={{ width: '100%' }}
+                            placeholder="Choose shared inbounds"
                             value={Object.keys(assignments).map(Number)}
                             options={inbounds.map((ib) => ({
-                              label: `#${ib.id} · ${ib.remark} · ${ib.protocol}:${ib.port}`, value: ib.id,
+                              label: `#${ib.id} · ${ib.remark} · ${ib.protocol}:${ib.port}`,
+                              value: ib.id,
                             }))}
-                            onChange={(ids) => setAssignments((previous) => {
-                              const next: Record<number, boolean> = {};
-                              for (const id of ids) next[id] = previous[id] ?? false;
-                              return next;
-                            })} />
+                            onChange={(ids) =>
+                              setAssignments((previous) => {
+                                const next: Record<number, boolean> = {};
+                                for (const id of ids) next[id] = previous[id] ?? false;
+                                return next;
+                              })
+                            }
+                          />
                           <Space orientation="vertical" style={{ marginTop: 16 }}>
                             {Object.entries(assignments).map(([id, canCreate]) => (
                               <Space key={id}>
-                                <Typography.Text>Inbound #{id} — can create clients</Typography.Text>
-                                <Switch aria-label={`Allow creating clients on inbound ${id}`} checked={canCreate}
-                                  onChange={(value) => setAssignments((prev) => ({ ...prev, [Number(id)]: value }))} />
+                                <Typography.Text>
+                                  Inbound #{id} — can create clients
+                                </Typography.Text>
+                                <Switch
+                                  aria-label={`Allow creating clients on inbound ${id}`}
+                                  checked={canCreate}
+                                  onChange={(value) =>
+                                    setAssignments((prev) => ({ ...prev, [Number(id)]: value }))
+                                  }
+                                />
                               </Space>
                             ))}
                           </Space>
@@ -323,14 +495,28 @@ export default function AdminsPage() {
                     </>
                   )}
                   {profileTarget && (
-                    <Card title={isOwner ? `Subscription profile for #${profileTarget}` : 'My subscription profile'}
-                      extra={<Button type="primary" loading={saving} onClick={() => void saveProfile()}>Save profile</Button>}>
+                    <Card
+                      title={
+                        isOwner
+                          ? `Subscription profile for #${profileTarget}`
+                          : 'My subscription profile'
+                      }
+                      extra={
+                        <Button type="primary" loading={saving} onClick={() => void saveProfile()}>
+                          Save profile
+                        </Button>
+                      }
+                    >
                       <Row gutter={[12, 16]}>
                         {inputField('title', 'Subscription title')}
                         {inputField('supportId', 'Telegram support ID', '@your_support')}
                         {inputField('supportUrl', 'Support URL', 'https://t.me/your_support')}
                         {inputField('subscriptionBaseUrl', 'Subscription base URL (HTTPS)')}
-                        {inputField('remarkTemplate', 'Config name pattern', '{{country}} | {{client}}')}
+                        {inputField(
+                          'remarkTemplate',
+                          'Config name pattern',
+                          '{{country}} | {{client}}',
+                        )}
                         {inputField('shareLinkTemplate', 'Share-link template name')}
                         {inputField('pageTemplate', 'Subscription page template name')}
                       </Row>
@@ -344,10 +530,19 @@ export default function AdminsPage() {
           </Layout.Content>
         </Layout>
       </Layout>
-      <Modal open={createVisible} title="Create administrator" footer={null} destroyOnHidden
-        onCancel={() => setCreateVisible(false)}>
-        <Form form={createForm} layout="vertical" onFinish={(values) => void createUser(values)}
-          initialValues={{ role: 'reseller', enabled: false }}>
+      <Modal
+        open={createVisible}
+        title="Create administrator"
+        footer={null}
+        destroyOnHidden
+        onCancel={() => setCreateVisible(false)}
+      >
+        <Form
+          form={createForm}
+          layout="vertical"
+          onFinish={(values) => void createUser(values)}
+          initialValues={{ role: 'reseller', enabled: false }}
+        >
           <Form.Item name="username" label="Username" rules={[{ required: true }, { min: 3 }]}>
             <Input autoComplete="off" />
           </Form.Item>
@@ -361,7 +556,9 @@ export default function AdminsPage() {
             <Switch />
           </Form.Item>
           <Space>
-            <Button type="primary" htmlType="submit" loading={saving}>Create</Button>
+            <Button type="primary" htmlType="submit" loading={saving}>
+              Create
+            </Button>
             <Button onClick={() => setCreateVisible(false)}>Cancel</Button>
           </Space>
         </Form>
@@ -373,22 +570,29 @@ export default function AdminsPage() {
 function AssignedInboundViewer() {
   const [rows, setRows] = useState<InboundOption[]>([]);
   useEffect(() => {
-    void HttpUtil.get<InboundOption[]>(`${base}/me/inbounds`, undefined, { silent: true })
-      .then((r) => { if (r.success) setRows(r.obj ?? []); });
+    void HttpUtil.get<InboundOption[]>(`${base}/me/inbounds`, undefined, { silent: true }).then(
+      (r) => {
+        if (r.success) setRows(r.obj ?? []);
+      },
+    );
   }, []);
   return (
     <Card title="My assigned inbounds">
-      <Table<InboundOption> size="small" pagination={false} rowKey="id" dataSource={rows}
+      <Table<InboundOption>
+        size="small"
+        pagination={false}
+        rowKey="id"
+        dataSource={rows}
         columns={[
           { title: 'ID', dataIndex: 'id' },
           { title: 'Name', dataIndex: 'remark' },
           { title: 'Protocol', dataIndex: 'protocol' },
           { title: 'Port', dataIndex: 'port' },
-        ]} />
+        ]}
+      />
     </Card>
   );
 }
-
 
 type OwnClient = {
   id: number;
@@ -411,16 +615,24 @@ function StaffClientsPanel() {
   const [messageApi, holder] = message.useMessage();
 
   const refresh = useCallback(async () => {
-    const response = await HttpUtil.get<OwnClient[]>(`${base}/me/clients`, undefined, { silent: true });
+    const response = await HttpUtil.get<OwnClient[]>(`${base}/me/clients`, undefined, {
+      silent: true,
+    });
     if (response.success) setMembers(response.obj ?? []);
     else messageApi.error(response.msg || 'Unable to load own clients');
   }, [messageApi]);
 
   useEffect(() => {
-    void HttpUtil.get<OwnClient[]>(`${base}/me/clients`, undefined, { silent: true })
-      .then((response) => { if (response.success) setMembers(response.obj ?? []); });
-    void HttpUtil.get<StaffInbound[]>(`${base}/me/inbounds`, undefined, { silent: true })
-      .then((r) => { if (r.success) setInbounds(r.obj ?? []); });
+    void HttpUtil.get<OwnClient[]>(`${base}/me/clients`, undefined, { silent: true }).then(
+      (response) => {
+        if (response.success) setMembers(response.obj ?? []);
+      },
+    );
+    void HttpUtil.get<StaffInbound[]>(`${base}/me/inbounds`, undefined, { silent: true }).then(
+      (r) => {
+        if (r.success) setInbounds(r.obj ?? []);
+      },
+    );
   }, [refresh]);
 
   async function createClient() {
@@ -431,50 +643,71 @@ function StaffClientsPanel() {
     setBusy(true);
     try {
       const expiryTime = durationDays > 0 ? Date.now() + durationDays * 86_400_000 : 0;
-      const response = await HttpUtil.post(`${base}/me/clients/create`, {
-        client: {
-          email: email.trim(),
-          totalGB: Math.round(quotaGB * 1_073_741_824),
-          expiryTime,
-          enable: true,
+      const response = await HttpUtil.post(
+        `${base}/me/clients/create`,
+        {
+          client: {
+            email: email.trim(),
+            totalGB: Math.round(quotaGB * 1_073_741_824),
+            expiryTime,
+            enable: true,
+          },
+          inboundIds: selected,
         },
-        inboundIds: selected,
-      }, { silent: true });
+        { silent: true },
+      );
       if (!response.success) messageApi.error(response.msg || 'Unable to create client');
       else {
         messageApi.success('Client provisioned');
         setEmail('');
         await refresh();
       }
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function showLinks(clientEmail: string, subscription: boolean) {
     const kind = subscription ? 'sub-links' : 'links';
     const response = await HttpUtil.get<string[]>(
       `${base}/me/clients/${encodeURIComponent(clientEmail)}/${kind}`,
-      undefined, { silent: true },
+      undefined,
+      { silent: true },
     );
     if (!response.success) {
       messageApi.error(response.msg || 'Unable to fetch client links');
       return;
     }
     const links = response.obj ?? [];
-    if (!links.length) { messageApi.warning('No links available'); return; }
+    if (!links.length) {
+      messageApi.warning('No links available');
+      return;
+    }
     Modal.info({
       title: subscription ? 'Subscription links' : 'Configuration links',
       width: 680,
       content: (
         <Space orientation="vertical" style={{ width: '100%' }}>
           {links.map((url, i) => (
-            <Input.TextArea key={i} aria-label={`Link ${i + 1}`} value={url} autoSize={{ minRows: 2, maxRows: 5 }}
-              readOnly onFocus={(event) => event.target.select()} />
+            <Input.TextArea
+              key={i}
+              aria-label={`Link ${i + 1}`}
+              value={url}
+              autoSize={{ minRows: 2, maxRows: 5 }}
+              readOnly
+              onFocus={(event) => event.target.select()}
+            />
           ))}
-          <Button onClick={() => {
-            void navigator.clipboard.writeText(links.join('\n'))
-              .then(() => messageApi.success('Copied to clipboard'))
-              .catch(() => messageApi.warning('Select and copy the links manually'));
-          }}>Copy all</Button>
+          <Button
+            onClick={() => {
+              void navigator.clipboard
+                .writeText(links.join('\n'))
+                .then(() => messageApi.success('Copied to clipboard'))
+                .catch(() => messageApi.warning('Select and copy the links manually'));
+            }}
+          >
+            Copy all
+          </Button>
         </Space>
       ),
     });
@@ -485,11 +718,17 @@ function StaffClientsPanel() {
     try {
       const response = await HttpUtil.post(
         `${base}/me/clients/delete/${encodeURIComponent(clientEmail)}`,
-        undefined, { silent: true },
+        undefined,
+        { silent: true },
       );
       if (!response.success) messageApi.error(response.msg || 'Client delete failed');
-      else { messageApi.success('Client deleted'); await refresh(); }
-    } finally { setBusy(false); }
+      else {
+        messageApi.success('Client deleted');
+        await refresh();
+      }
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -499,27 +738,53 @@ function StaffClientsPanel() {
         <Row gutter={[12, 12]}>
           <Col xs={24} md={10}>
             <Typography.Text>Client email / identifier</Typography.Text>
-            <Input aria-label="Client email / identifier" value={email} onChange={(e) => setEmail(e.target.value)}
-              placeholder="customer001" maxLength={128} />
+            <Input
+              aria-label="Client email / identifier"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="customer001"
+              maxLength={128}
+            />
           </Col>
           <Col xs={12} md={7}>
             <Typography.Text>Traffic quota (GiB)</Typography.Text>
-            <InputNumber aria-label="Traffic quota in GiB" min={1} max={100000} value={quotaGB}
-              onChange={(value) => setQuotaGB(value ?? 50)} style={{ width: '100%' }} />
+            <InputNumber
+              aria-label="Traffic quota in GiB"
+              min={1}
+              max={100000}
+              value={quotaGB}
+              onChange={(value) => setQuotaGB(value ?? 50)}
+              style={{ width: '100%' }}
+            />
           </Col>
           <Col xs={12} md={7}>
             <Typography.Text>Validity (days, 0 = unlimited)</Typography.Text>
-            <InputNumber aria-label="Validity in days" min={0} max={3650} value={durationDays}
-              onChange={(value) => setDurationDays(value ?? 30)} style={{ width: '100%' }} />
+            <InputNumber
+              aria-label="Validity in days"
+              min={0}
+              max={3650}
+              value={durationDays}
+              onChange={(value) => setDurationDays(value ?? 30)}
+              style={{ width: '100%' }}
+            />
           </Col>
           <Col span={24}>
             <Typography.Text>Writable inbounds</Typography.Text>
-            <Select aria-label="Writable inbounds" mode="multiple" tagRender={selectTagRender} style={{ width: '100%' }} value={selected}
+            <Select
+              aria-label="Writable inbounds"
+              mode="multiple"
+              tagRender={selectTagRender}
+              style={{ width: '100%' }}
+              value={selected}
               onChange={setSelected}
-              options={inbounds.filter((ib) => ib.canCreate).map((ib) => ({
-                value: ib.id, label: `#${ib.id} - ${ib.remark} (${ib.protocol})`,
-              }))}
-              placeholder="Only inbounds assigned for client creation appear here" />
+              options={inbounds
+                .filter((ib) => ib.canCreate)
+                .map((ib) => ({
+                  value: ib.id,
+                  label: `#${ib.id} - ${ib.remark} (${ib.protocol})`,
+                }))}
+              placeholder="Only inbounds assigned for client creation appear here"
+            />
           </Col>
           <Col span={24}>
             <Button type="primary" loading={busy} onClick={() => void createClient()}>
@@ -529,29 +794,55 @@ function StaffClientsPanel() {
         </Row>
       </Card>
       <Card title="My clients">
-        <Table<OwnClient> size="small" rowKey="id" dataSource={members}
+        <Table<OwnClient>
+          size="small"
+          rowKey="id"
+          dataSource={members}
           pagination={{ pageSize: 20 }}
           scroll={{ x: 650 }}
           columns={[
             { title: 'Client', dataIndex: 'email' },
-            { title: 'Quota (GiB)', dataIndex: 'totalGB',
-              render: (v: number) => (v / 1_073_741_824).toFixed(1) },
-            { title: 'Expiry', dataIndex: 'expiryTime',
-              render: (v: number) => v > 0 ? new Date(v).toLocaleDateString() : 'Unlimited' },
-            { title: 'Status', dataIndex: 'enable',
-              render: (v: boolean) => <Tag color={v ? 'green' : 'default'}>{v ? 'Enabled' : 'Disabled'}</Tag> },
-            { title: 'Actions', render: (_, record) => (
-              <Space>
-                <Button size="small" onClick={() => void showLinks(record.email, true)}>Subscription</Button>
-                <Button size="small" onClick={() => void showLinks(record.email, false)}>Configs</Button>
-                <Popconfirm title="Delete this client?"
-                  description="This removes its VPN credentials from all inbounds."
-                  onConfirm={() => void deleteClient(record.email)}>
-                  <Button danger size="small" loading={busy}>Delete</Button>
-                </Popconfirm>
-              </Space>
-            ) },
-          ]} />
+            {
+              title: 'Quota (GiB)',
+              dataIndex: 'totalGB',
+              render: (v: number) => (v / 1_073_741_824).toFixed(1),
+            },
+            {
+              title: 'Expiry',
+              dataIndex: 'expiryTime',
+              render: (v: number) => (v > 0 ? new Date(v).toLocaleDateString() : 'Unlimited'),
+            },
+            {
+              title: 'Status',
+              dataIndex: 'enable',
+              render: (v: boolean) => (
+                <Tag color={v ? 'green' : 'default'}>{v ? 'Enabled' : 'Disabled'}</Tag>
+              ),
+            },
+            {
+              title: 'Actions',
+              render: (_, record) => (
+                <Space>
+                  <Button size="small" onClick={() => void showLinks(record.email, true)}>
+                    Subscription
+                  </Button>
+                  <Button size="small" onClick={() => void showLinks(record.email, false)}>
+                    Configs
+                  </Button>
+                  <Popconfirm
+                    title="Delete this client?"
+                    description="This removes its VPN credentials from all inbounds."
+                    onConfirm={() => void deleteClient(record.email)}
+                  >
+                    <Button danger size="small" loading={busy}>
+                      Delete
+                    </Button>
+                  </Popconfirm>
+                </Space>
+              ),
+            },
+          ]}
+        />
       </Card>
     </Space>
   );

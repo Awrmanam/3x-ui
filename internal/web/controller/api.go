@@ -216,7 +216,7 @@ func (a *APIController) enforceStaffScope(c *gin.Context) {
 	case rel == "/admins/me/clients/update/:email" && c.Request.Method == http.MethodPost:
 	case rel == "/admins/me/clients/delete/:email" && c.Request.Method == http.MethodPost:
 	default:
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"success":false,"msg":"staff route not yet authorized"})
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"success": false, "msg": "staff route not yet authorized"})
 		return
 	}
 	c.Next()

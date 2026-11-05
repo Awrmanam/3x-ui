@@ -160,10 +160,11 @@ export default function AppSidebar() {
   // Server middleware independently blocks all unsafe legacy API routes.
   const [isStaff, setIsStaff] = useState(false);
   useEffect(() => {
-    void HttpUtil.get<{role?: string}>('/panel/api/admins/me', undefined, { silent: true })
-      .then((response) => {
+    void HttpUtil.get<{ role?: string }>('/panel/api/admins/me', undefined, { silent: true }).then(
+      (response) => {
         if (response.success && response.obj) setIsStaff(response.obj.role !== 'owner');
-      });
+      },
+    );
   }, []);
 
   const [hovered, setHovered] = useState(() => hoveredAcrossRemounts);

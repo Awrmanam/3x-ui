@@ -159,7 +159,9 @@ func (s *SubService) subscriptionTemplateContextBySubID(subID string) (remarkCon
 // resolved from the subscriber ledger. Never mutate the shared controller
 // SubService: otherwise concurrent resellers would bleed their names together.
 func (s *SubService) applyStaffRemarkTemplate(subID string) {
- profile,ok:=staffSubscriptionMetadata(subID)
- if !ok || profile.RemarkTemplate=="" {return}
- s.remarkTemplate=authz.CanonicalRemarkTemplate(profile.RemarkTemplate)
+	profile, ok := staffSubscriptionMetadata(subID)
+	if !ok || profile.RemarkTemplate == "" {
+		return
+	}
+	s.remarkTemplate = authz.CanonicalRemarkTemplate(profile.RemarkTemplate)
 }

@@ -22,13 +22,16 @@ export default function PanelLayout() {
 
   useEffect(() => {
     let active = true;
-    void HttpUtil.get<{ role: string }>('/panel/api/admins/me', undefined, { silent: true })
-      .then((result) => {
+    void HttpUtil.get<{ role: string }>('/panel/api/admins/me', undefined, { silent: true }).then(
+      (result) => {
         if (!active) return;
         if (result.success && result.obj) setRole(result.obj.role);
         setChecked(true);
-      });
-    return () => { active = false; };
+      },
+    );
+    return () => {
+      active = false;
+    };
   }, []);
 
   if (!checked) return null;
