@@ -47,6 +47,12 @@ func TestStaffAPIDeniesUnscopedLegacyRoutes(t *testing.T) {
 	}{
 		{"member cannot list global clients", "/panel/api/clients/list", &subordinate, http.StatusForbidden},
 		{"member cannot fetch backups", "/panel/api/server/getDb", &subordinate, http.StatusForbidden},
+		{"member cannot list API tokens", "/panel/api/setting/apiTokens", &subordinate, http.StatusForbidden},
+		{"member cannot list all hosts", "/panel/api/hosts/list", &subordinate, http.StatusForbidden},
+		{"member cannot list all nodes", "/panel/api/nodes/list", &subordinate, http.StatusForbidden},
+		{"member cannot list other administrators", "/panel/api/admins/list", &subordinate, http.StatusForbidden},
+		{"member can read own profile", "/panel/api/admins/me/profile", &subordinate, http.StatusOK},
+		{"member can read assigned inbound summaries", "/panel/api/admins/me/inbounds", &subordinate, http.StatusOK},
 		{"member can view own identity", "/panel/api/admins/me", &subordinate, http.StatusOK},
 		{"member can list own clients", "/panel/api/admins/me/clients", &subordinate, http.StatusOK},
 		{"owner retains global client access", "/panel/api/clients/list", &owner, http.StatusOK},
