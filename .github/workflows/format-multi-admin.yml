@@ -23,6 +23,7 @@ on:
       - "internal/sub/clash_service.go"
       - "internal/sub/placeholders.go"
       - "frontend/src/pages/admins/**"
+      - "frontend/src/pages/api-docs/endpoints.ts"
       - "frontend/src/layouts/AppSidebar.tsx"
       - "frontend/src/layouts/PanelLayout.tsx"
       - "frontend/src/routes/panelRoutes.tsx"
@@ -67,11 +68,17 @@ jobs:
           npm ci
           npx oxfmt --write \
             src/pages/admins/AdminsPage.tsx \
+            src/pages/api-docs/endpoints.ts \
             src/layouts/AppSidebar.tsx \
             src/layouts/PanelLayout.tsx \
             src/routes/panelRoutes.tsx
           cd ../docs
           ../frontend/node_modules/.bin/oxfmt --write multi-admin-rbac.md
+      - name: Regenerate OpenAPI and schemas
+        run: |
+          cd frontend
+          npm run gen
+          cp public/openapi.json ../docs/public/openapi.json
       - name: Commit format-only changes to the feature branch
         run: |
           git config user.name "github-actions[bot]"
@@ -85,7 +92,9 @@ jobs:
             internal/sub/json_service.go internal/sub/clash_service.go \
             internal/sub/placeholders.go frontend/src/pages/admins/AdminsPage.tsx \
             frontend/src/layouts/AppSidebar.tsx frontend/src/layouts/PanelLayout.tsx \
-            frontend/src/routes/panelRoutes.tsx docs/multi-admin-rbac.md
+            frontend/src/routes/panelRoutes.tsx frontend/src/pages/api-docs/endpoints.ts \
+            frontend/src/generated frontend/public/openapi.json \
+            docs/public/openapi.json docs/multi-admin-rbac.md
           if ! git diff --cached --quiet; then
             git commit -m "style: apply gofumpt and oxfmt to multi-admin implementation"
             git push origin HEAD:feature/multi-admin-rbac-foundation
